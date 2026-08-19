@@ -1,0 +1,879 @@
+mode: rule
+log-level: info
+ipv6: false
+allow-lan: false
+
+mixed-port: 7897
+
+unified-delay: true
+tcp-concurrent: true
+
+profile:
+  store-selected: true
+  store-fake-ip: true
+
+tun:
+  enable: true
+  stack: mixed
+  auto-route: true
+  auto-redirect: true
+  auto-detect-interface: true
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+
+  default-nameserver:
+    - 223.5.5.5
+    - 119.29.29.29
+
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  proxy-server-nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+
+  fake-ip-filter:
+    - "*.lan"
+    - "*.local"
+    - "localhost.ptlogin2.qq.com"
+    - "+.msftconnecttest.com"
+    - "+.msftncsi.com"
+    - "time.*.com"
+    - "time.*.gov"
+    - "time.*.edu.cn"
+    - "time.*.apple.com"
+
+proxies:
+  - name: "Vultr-JP"
+    type: vless
+
+    server: 198.13.57.54
+    port: 443
+    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
+
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: "www.mi.com"
+
+    reality-opts:
+      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
+      short-id: "27bb3e8c080bf4de"
+
+    client-fingerprint: chrome
+
+  - name: "Vultr-SG"
+    type: vless
+
+    server: 139.180.209.160
+    port: 443
+    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
+
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: "www.mi.com"
+
+    reality-opts:
+      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
+      short-id: "27bb3e8c080bf4de"
+
+    client-fingerprint: chrome
+
+proxy-providers:
+  Airport:
+    type: http
+    url: "https://api.linkcube.dev/sub?target=clash&emoji=true&udp=true&scv=true&new_name=true&filename=LinkCube&url=https%3A%2F%2Fapi-linkcube.net%2Fsubscribe%2Fnjbee-pvakpq_y"
+    proxy: DIRECT
+    path: ./proxy_providers/airport.yaml
+    # 每 6 小时更新
+    interval: 21600
+    health-check:
+      enable: true
+      url: "https://www.youtube.com/generate_204"
+      interval: 300
+      timeout: 5000
+
+proxy-groups:
+  - name: PROXY
+    type: select
+
+    proxies:
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+      - DIRECT
+    use:
+      - Airport
+
+  - name: AUTO
+    type: url-test
+
+    proxies:
+      - Vultr-JP
+      - Vultr-SG
+    use:
+      - Airport
+
+    url: "https://www.youtube.com/generate_204"
+    interval: 300
+    tolerance: 50
+    lazy: true
+
+  - name: FALLBACK
+    type: fallback
+
+    # 顺序代表优先级：
+    proxies:
+      - Vultr-JP
+      - Vultr-SG
+    use:
+      - Airport
+
+    url: "https://www.youtube.com/generate_204"
+    interval: 300
+    lazy: true
+
+  - name: Google
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Google-IP
+    type: select
+    proxies:
+      - Google
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: YouTube
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: GoogleFCM
+    type: select
+    proxies:
+      - Google
+      - PROXY
+      - AUTO
+      - DIRECT
+
+  - name: Microsoft-CN
+    type: select
+    proxies:
+      - DIRECT
+      - Microsoft
+      - PROXY
+
+  - name: Microsoft
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: OneDrive
+    type: select
+    proxies:
+      - DIRECT
+      - Microsoft
+      - PROXY
+      - AUTO
+
+  - name: Xbox
+    type: select
+    proxies:
+      - DIRECT
+      - Microsoft
+      - PROXY
+      - AUTO
+
+  - name: Apple-CN
+    type: select
+    proxies:
+      - DIRECT
+      - Apple
+      - PROXY
+
+  - name: Apple
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Apple-Music
+    type: select
+    proxies:
+      - DIRECT
+      - Apple
+      - PROXY
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Apple-IP
+    type: select
+    proxies:
+      - Apple
+      - DIRECT
+      - PROXY
+
+  - name: Twitch
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Bilibili
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: Bilibili-IP
+    type: select
+    proxies:
+      - Bilibili
+      - DIRECT
+      - PROXY
+
+  - name: BiliIntl
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Bahamut
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: EHentai
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Pixiv
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Telegram
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Telegram-IP
+    type: select
+    proxies:
+      - Telegram
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Twitter
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Twitter-IP
+    type: select
+    proxies:
+      - Twitter
+      - PROXY
+      - AUTO
+
+  - name: OpenAI
+    type: select
+    proxies:
+      - Vultr-SG
+      - Vultr-JP
+      - PROXY
+      - FALLBACK
+
+  - name: Anthropic
+    type: select
+    proxies:
+      - Vultr-SG
+      - Vultr-JP
+      - PROXY
+      - FALLBACK
+
+  - name: Google-AI
+    type: select
+    proxies:
+      - Google
+      - Vultr-SG
+      - Vultr-JP
+      - PROXY
+
+  - name: Microsoft-AI
+    type: select
+    proxies:
+      - Microsoft
+      - PROXY
+      - Vultr-SG
+      - Vultr-JP
+
+  - name: Discord
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+
+  - name: Development
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - DIRECT
+
+  - name: GitHub
+    type: select
+    proxies:
+      - Development
+      - PROXY
+      - AUTO
+      - DIRECT
+
+  - name: Games-CN
+    type: select
+    proxies:
+      - DIRECT
+      - Games
+      - PROXY
+
+  - name: Games
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+      - AUTO
+      - FALLBACK
+
+  - name: Steam-CN
+    type: select
+    proxies:
+      - DIRECT
+      - Steam
+      - PROXY
+
+  - name: Steam
+    type: select
+    proxies:
+      - DIRECT
+      - Games
+      - PROXY
+      - AUTO
+
+  - name: Ads
+    type: select
+    proxies:
+      - REJECT
+      - DIRECT
+
+  - name: Private
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: Private-IP
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: Non-CN
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - Vultr-JP
+      - Vultr-SG
+      - DIRECT
+    use:
+      - Airport
+
+  - name: CN
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: CN-IP
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
+  - name: MATCH
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - DIRECT
+      - Vultr-JP
+      - Vultr-SG
+    use:
+      - Airport
+
+rule-providers:
+  private:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/private.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs"
+    interval: 86400
+
+  private_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/private_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/private.mrs"
+    interval: 86400
+
+  ads:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ads.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ads-all.mrs"
+    interval: 86400
+
+  google:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/google.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google.mrs"
+    interval: 86400
+
+  google_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/google_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs"
+    interval: 86400
+
+  youtube:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/youtube.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/youtube.mrs"
+    interval: 86400
+
+  googlefcm:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/googlefcm.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/googlefcm.mrs"
+    interval: 86400
+
+  openai:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/openai.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/openai.mrs"
+    interval: 86400
+
+  ai_global:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/category-ai-not-cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-!cn.mrs"
+    interval: 86400
+
+  microsoft_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/microsoft_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft@cn.mrs"
+    interval: 86400
+
+  microsoft:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/microsoft.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/microsoft.mrs"
+    interval: 86400
+
+  onedrive:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/onedrive.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/onedrive.mrs"
+    interval: 86400
+
+  xbox:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/xbox.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xbox.mrs"
+    interval: 86400
+
+  apple_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-cn.mrs"
+    interval: 86400
+
+  apple:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple.mrs"
+    interval: 86400
+
+  applemusic:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/applemusic.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/applemusic.mrs"
+    interval: 86400
+
+  apple_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/apple_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/apple.mrs"
+    interval: 86400
+
+  twitch:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/twitch.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/twitch.mrs"
+    interval: 86400
+
+  bilibili:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bilibili.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili.mrs"
+    interval: 86400
+
+  bilibili_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/bilibili_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/bilibili.mrs"
+    interval: 86400
+
+  biliintl:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/biliintl.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/biliintl.mrs"
+    interval: 86400
+
+  bahamut:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bahamut.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bahamut.mrs"
+    interval: 86400
+
+  ehentai:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ehentai.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ehentai.mrs"
+    interval: 86400
+
+  pixiv:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/pixiv.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/pixiv.mrs"
+    interval: 86400
+
+  telegram:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/telegram.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs"
+    interval: 86400
+
+  telegram_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/telegram_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs"
+    interval: 86400
+
+  twitter:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/twitter.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/twitter.mrs"
+    interval: 86400
+
+  twitter_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/twitter_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/twitter.mrs"
+    interval: 86400
+
+  discord:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/discord.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/discord.mrs"
+    interval: 86400
+
+  github:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/github.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs"
+    interval: 86400
+
+  steam_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/steam_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam@cn.mrs"
+    interval: 86400
+
+  steam:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/steam.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/steam.mrs"
+    interval: 86400
+
+  games_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/games_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games@cn.mrs"
+    interval: 86400
+
+  geolocation_non_cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/geolocation_non_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/geolocation-!cn.mrs"
+    interval: 86400
+
+  cn:
+    type: http
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/cn.mrs"
+    interval: 86400
+
+  cn_ip:
+    type: http
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/cn_ip.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs"
+    interval: 86400
+
+rules:
+  # Custom
+  - IP-CIDR,198.13.57.54/32,DIRECT
+  - IP-CIDR,139.180.209.160/32,DIRECT
+
+  # Private
+  - RULE-SET,private,DIRECT
+  - RULE-SET,private_ip,DIRECT,no-resolve
+
+  # Ads
+  - RULE-SET,ads,Ads
+
+  # ------------------------------------------------------------
+  # AI：比 Google / Microsoft 大集合优先
+  # ------------------------------------------------------------
+
+  - RULE-SET,openai,OpenAI
+
+  - DOMAIN-SUFFIX,anthropic.com,Anthropic
+  - DOMAIN-SUFFIX,claude.ai,Anthropic
+
+  - DOMAIN-SUFFIX,gemini.google,Google-AI
+  - DOMAIN-SUFFIX,gemini.google.com,Google-AI
+  - DOMAIN-SUFFIX,aistudio.google.com,Google-AI
+  - DOMAIN-SUFFIX,ai.google.dev,Google-AI
+
+  - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft-AI
+  - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft-AI
+
+  # ------------------------------------------------------------
+  # Google / GoogleFCM / YouTube
+  # ------------------------------------------------------------
+
+  - RULE-SET,youtube,YouTube
+
+  - RULE-SET,googlefcm,GoogleFCM
+
+  - RULE-SET,google,Google
+  - RULE-SET,google_ip,Google-IP,no-resolve
+
+  # ------------------------------------------------------------
+  # Microsoft
+  # ------------------------------------------------------------
+
+  - RULE-SET,microsoft_cn,Microsoft-CN
+  - RULE-SET,onedrive,OneDrive
+  - RULE-SET,xbox,Xbox
+  - RULE-SET,microsoft,Microsoft
+
+  # ------------------------------------------------------------
+  # Apple
+  # ------------------------------------------------------------
+
+  - RULE-SET,apple_cn,Apple-CN
+  - RULE-SET,applemusic,Apple-Music
+  - RULE-SET,apple,Apple
+  - RULE-SET,apple_ip,Apple-IP,no-resolve
+
+  # ------------------------------------------------------------
+  # Content
+  # ------------------------------------------------------------
+
+  - RULE-SET,twitch,Twitch
+
+  - RULE-SET,biliintl,BiliIntl
+  - RULE-SET,bilibili,Bilibili
+  - RULE-SET,bilibili_ip,Bilibili-IP,no-resolve
+
+  - RULE-SET,bahamut,Bahamut
+  - RULE-SET,ehentai,EHentai
+  - RULE-SET,pixiv,Pixiv
+
+  # ------------------------------------------------------------
+  # Communication / Social
+  # ------------------------------------------------------------
+
+  - RULE-SET,telegram,Telegram
+  - RULE-SET,telegram_ip,Telegram-IP,no-resolve
+
+  - RULE-SET,twitter,Twitter
+  - RULE-SET,twitter_ip,Twitter-IP,no-resolve
+
+  - RULE-SET,discord,Discord
+
+  # ------------------------------------------------------------
+  # Development
+  # ------------------------------------------------------------
+
+  - RULE-SET,github,GitHub
+
+  # ------------------------------------------------------------
+  # Games
+  # ------------------------------------------------------------
+
+  - RULE-SET,steam_cn,Steam-CN
+  - RULE-SET,games_cn,Games-CN
+  - RULE-SET,steam,Steam
+
+  # ------------------------------------------------------------
+  # 剩余 AI
+  # 放在各平台专属规则之后
+  # ------------------------------------------------------------
+
+  - RULE-SET,ai_global,PROXY
+
+  # ------------------------------------------------------------
+  # 通用分流
+  # ------------------------------------------------------------
+
+  - RULE-SET,geolocation_non_cn,PROXY
+
+  - RULE-SET,cn,DIRECT
+  - RULE-SET,cn_ip,DIRECT,no-resolve
+
+  - MATCH,PROXY
+
