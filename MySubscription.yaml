@@ -145,6 +145,22 @@ proxy-groups:
     interval: 300
     lazy: true
 
+  - name: Development
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - DIRECT
+
+  - name: GitHub
+    type: select
+    proxies:
+      - Development
+      - PROXY
+      - AUTO
+      - DIRECT
+
   - name: Google
     type: select
     proxies:
@@ -371,22 +387,6 @@ proxy-groups:
       - FALLBACK
       - Vultr-JP
       - Vultr-SG
-
-  - name: Development
-    type: select
-    proxies:
-      - PROXY
-      - AUTO
-      - FALLBACK
-      - DIRECT
-
-  - name: GitHub
-    type: select
-    proxies:
-      - Development
-      - PROXY
-      - AUTO
-      - DIRECT
 
   - name: Games-CN
     type: select
@@ -774,6 +774,12 @@ rules:
   - RULE-SET,ads,Ads
 
   # ------------------------------------------------------------
+  # Development
+  # ------------------------------------------------------------
+
+  - RULE-SET,github,GitHub
+
+  # ------------------------------------------------------------
   # AI：比 Google / Microsoft 大集合优先
   # ------------------------------------------------------------
 
@@ -844,12 +850,6 @@ rules:
   - RULE-SET,twitter_ip,Twitter-IP,no-resolve
 
   - RULE-SET,discord,Discord
-
-  # ------------------------------------------------------------
-  # Development
-  # ------------------------------------------------------------
-
-  - RULE-SET,github,GitHub
 
   # ------------------------------------------------------------
   # Games
