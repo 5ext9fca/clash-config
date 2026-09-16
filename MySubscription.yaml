@@ -51,6 +51,10 @@ dns:
     - "time.*.edu.cn"
     - "time.*.apple.com"
 
+  nameserver-policy:
+    '+.cuhk.edu.cn':
+      - 10.20.220.50
+
 proxies:
   - name: "Vultr-JP"
     type: vless
@@ -766,6 +770,7 @@ rules:
   # Custom
   - IP-CIDR,198.13.57.54/32,DIRECT
   - IP-CIDR,139.180.209.160/32,DIRECT
+  - DOMAIN-SUFFIX,cuhk.edu.cn,DIRECT
 
   # Private
   - RULE-SET,private,DIRECT
