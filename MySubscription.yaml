@@ -97,11 +97,9 @@ proxies:
 proxy-providers:
   Airport:
     type: http
-    url: "https://api.linkcube.dev/sub?target=clash&emoji=true&udp=true&scv=true&new_name=true&filename=LinkCube&url=https%3A%2F%2Fapi-linkcube.net%2Fsubscribe%2Fnjbee-pvakpq_y"
+    url: "https://api.usfoo.com/api/v1/message?token=156b674d754416c212d668ebd3bc14d7"
     proxy: DIRECT
     path: ./proxy_providers/airport.yaml
-    # 每 6 小时更新
-    interval: 21600
     health-check:
       enable: true
       url: "https://www.youtube.com/generate_204"
