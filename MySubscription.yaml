@@ -382,6 +382,13 @@ proxy-groups:
       - Vultr-SG
       - Vultr-JP
 
+  - name: Other-AI
+    type: select
+    proxies:
+      - PROXY
+      - Vultr-SG
+      - DIRECT
+
   - name: Discord
     type: select
     proxies:
@@ -868,7 +875,7 @@ rules:
   # 放在各平台专属规则之后
   # ------------------------------------------------------------
 
-  - RULE-SET,ai_global,PROXY
+  - RULE-SET,ai_global,Other-AI
 
   # ------------------------------------------------------------
   # 通用分流
