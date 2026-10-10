@@ -1,10 +1,16 @@
+# Common Mihomo profile: terminal defaults; Nikki supplies router overrides.
+# Preserves the original private nodes and Airport subscription credentials.
+# Requires a Mihomo-based client with MRS and VLESS REALITY support.
+# Terminal: enable the client service/VPN/TUN permission and let it manage DNS.
+# Router: use Nikki TPROXY, disable TUN and DNS hijacking, and use redir-host.
+# Router DNS: clients -> AGH:53 -> Mihomo 127.0.0.1:1053.
+# Campus DNS 10.20.220.50 requires campus network/VPN reachability.
+
 mode: rule
 log-level: info
 ipv6: false
 allow-lan: false
-
 mixed-port: 7897
-
 unified-delay: true
 tcp-concurrent: true
 
@@ -16,44 +22,77 @@ tun:
   enable: true
   stack: mixed
   auto-route: true
-  auto-redirect: true
+  # Keep this cross-platform profile free of Linux-specific redirect rules.
+  auto-redirect: false
   auto-detect-interface: true
   dns-hijack:
     - any:53
     - tcp://any:53
 
+# Domain recovery is useful for router redir-host and cached DNS answers.
+sniffer:
+  enable: true
+  force-dns-mapping: true
+  parse-pure-ip: true
+  override-destination: false
+  sniff:
+    HTTP:
+      ports: [80, 8080-8880]
+    TLS:
+      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
+  skip-domain:
+    - '+.cuhk.edu.cn'
+    - '+.lan'
+    - '+.local'
+    - 'Mijia Cloud'
+
 dns:
   enable: true
+  listen: 127.0.0.1:1053
   ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
+  respect-rules: false
 
+  # Bootstrap DNS for resolvers; does not point back to the router's AGH.
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
 
+  # Foreign/default resolution uses the currently selected PROXY group.
   nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - 'https://1.1.1.1/dns-query#PROXY'
+    - 'https://8.8.8.8/dns-query#PROXY'
 
+  # Node hostnames must resolve without depending on the proxy itself.
   proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
+    - 'https://dns.alidns.com/dns-query#DIRECT'
+    - 'https://doh.pub/dns-query#DIRECT'
 
   fake-ip-filter:
-    - "*.lan"
-    - "*.local"
-    - "localhost.ptlogin2.qq.com"
-    - "+.msftconnecttest.com"
-    - "+.msftncsi.com"
-    - "time.*.com"
-    - "time.*.gov"
-    - "time.*.edu.cn"
-    - "time.*.apple.com"
+    - '*.lan'
+    - '*.local'
+    - '+.cuhk.edu.cn'
+    - 'localhost.ptlogin2.qq.com'
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
+    - 'time.*.com'
+    - 'time.*.gov'
+    - 'time.*.edu.cn'
+    - 'time.*.apple.com'
 
   nameserver-policy:
+    # Bootstrap the DIRECT Airport subscription without relying on proxy DNS.
+    api.usfoo.com:
+      - 'https://dns.alidns.com/dns-query#DIRECT'
+      - 'https://doh.pub/dns-query#DIRECT'
     '+.cuhk.edu.cn':
       - 10.20.220.50
+    'rule-set:cn':
+      - 'https://dns.alidns.com/dns-query#DIRECT'
+      - 'https://doh.pub/dns-query#DIRECT'
 
 proxies:
   - name: "Vultr-JP"
@@ -97,6 +136,7 @@ proxies:
 proxy-providers:
   Airport:
     type: http
+    interval: 86400
     url: "https://api.usfoo.com/api/v1/message?token=156b674d754416c212d668ebd3bc14d7"
     proxy: DIRECT
     path: ./proxy_providers/airport.yaml
@@ -485,6 +525,7 @@ proxy-groups:
 rule-providers:
   private:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/private.mrs
@@ -493,6 +534,7 @@ rule-providers:
 
   private_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/private_ip.mrs
@@ -501,6 +543,7 @@ rule-providers:
 
   ads:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/ads.mrs
@@ -509,6 +552,7 @@ rule-providers:
 
   google:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/google.mrs
@@ -517,6 +561,7 @@ rule-providers:
 
   google_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/google_ip.mrs
@@ -525,6 +570,7 @@ rule-providers:
 
   youtube:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/youtube.mrs
@@ -533,6 +579,7 @@ rule-providers:
 
   googlefcm:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/googlefcm.mrs
@@ -541,6 +588,7 @@ rule-providers:
 
   openai:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/openai.mrs
@@ -549,6 +597,7 @@ rule-providers:
 
   ai_global:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/category-ai-not-cn.mrs
@@ -557,6 +606,7 @@ rule-providers:
 
   microsoft_cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/microsoft_cn.mrs
@@ -565,6 +615,7 @@ rule-providers:
 
   microsoft:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/microsoft.mrs
@@ -573,6 +624,7 @@ rule-providers:
 
   onedrive:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/onedrive.mrs
@@ -581,6 +633,7 @@ rule-providers:
 
   xbox:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/xbox.mrs
@@ -589,6 +642,7 @@ rule-providers:
 
   apple_cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/apple_cn.mrs
@@ -597,6 +651,7 @@ rule-providers:
 
   apple:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/apple.mrs
@@ -605,6 +660,7 @@ rule-providers:
 
   applemusic:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/applemusic.mrs
@@ -613,6 +669,7 @@ rule-providers:
 
   apple_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/apple_ip.mrs
@@ -621,6 +678,7 @@ rule-providers:
 
   twitch:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/twitch.mrs
@@ -629,6 +687,7 @@ rule-providers:
 
   bilibili:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/bilibili.mrs
@@ -637,6 +696,7 @@ rule-providers:
 
   bilibili_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/bilibili_ip.mrs
@@ -645,6 +705,7 @@ rule-providers:
 
   biliintl:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/biliintl.mrs
@@ -653,6 +714,7 @@ rule-providers:
 
   bahamut:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/bahamut.mrs
@@ -661,6 +723,7 @@ rule-providers:
 
   ehentai:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/ehentai.mrs
@@ -669,6 +732,7 @@ rule-providers:
 
   pixiv:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/pixiv.mrs
@@ -677,6 +741,7 @@ rule-providers:
 
   telegram:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/telegram.mrs
@@ -685,6 +750,7 @@ rule-providers:
 
   telegram_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/telegram_ip.mrs
@@ -693,6 +759,7 @@ rule-providers:
 
   twitter:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/twitter.mrs
@@ -701,6 +768,7 @@ rule-providers:
 
   twitter_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/twitter_ip.mrs
@@ -709,6 +777,7 @@ rule-providers:
 
   discord:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/discord.mrs
@@ -717,6 +786,7 @@ rule-providers:
 
   github:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/github.mrs
@@ -725,6 +795,7 @@ rule-providers:
 
   steam_cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/steam_cn.mrs
@@ -733,6 +804,7 @@ rule-providers:
 
   steam:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/steam.mrs
@@ -741,6 +813,7 @@ rule-providers:
 
   games_cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/games_cn.mrs
@@ -749,6 +822,7 @@ rule-providers:
 
   geolocation_non_cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/geolocation_non_cn.mrs
@@ -757,6 +831,7 @@ rule-providers:
 
   cn:
     type: http
+    proxy: PROXY
     behavior: domain
     format: mrs
     path: ./rule_providers/cn.mrs
@@ -765,6 +840,7 @@ rule-providers:
 
   cn_ip:
     type: http
+    proxy: PROXY
     behavior: ipcidr
     format: mrs
     path: ./rule_providers/cn_ip.mrs
@@ -773,13 +849,13 @@ rule-providers:
 
 rules:
   # Custom
-  - IP-CIDR,198.13.57.54/32,DIRECT
-  - IP-CIDR,139.180.209.160/32,DIRECT
+  - IP-CIDR,198.13.57.54/32,DIRECT,no-resolve
+  - IP-CIDR,139.180.209.160/32,DIRECT,no-resolve
   - DOMAIN-SUFFIX,cuhk.edu.cn,DIRECT
 
   # Private
-  - RULE-SET,private,DIRECT
-  - RULE-SET,private_ip,DIRECT,no-resolve
+  - RULE-SET,private,Private
+  - RULE-SET,private_ip,Private-IP,no-resolve
 
   # Ads
   - RULE-SET,ads,Ads
@@ -881,10 +957,10 @@ rules:
   # 通用分流
   # ------------------------------------------------------------
 
-  - RULE-SET,geolocation_non_cn,PROXY
+  - RULE-SET,geolocation_non_cn,Non-CN
 
-  - RULE-SET,cn,DIRECT
-  - RULE-SET,cn_ip,DIRECT,no-resolve
+  - RULE-SET,cn,CN
+  - RULE-SET,cn_ip,CN-IP,no-resolve
 
-  - MATCH,PROXY
+  - MATCH,MATCH
 
