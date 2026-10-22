@@ -231,6 +231,14 @@ proxy-groups:
       - Vultr-JP
       - Vultr-SG
 
+  - name: Media
+    type: select
+    proxies:
+      - PROXY
+      - AUTO
+      - FALLBACK
+      - DIRECT
+
   - name: GoogleFCM
     type: select
     proxies:
@@ -496,6 +504,12 @@ proxy-groups:
       - DIRECT
       - PROXY
 
+  - name: Remote-Control
+    type: select
+    proxies:
+      - DIRECT
+      - PROXY
+
   - name: MATCH
     type: select
     proxies:
@@ -581,6 +595,24 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ip-geo-detect.mrs"
     interval: 86400
 
+  stun:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/stun.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-stun.mrs"
+    interval: 86400
+
+  ddns:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ddns.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ddns.mrs"
+    interval: 86400
+
   google:
     type: http
     proxy: PROXY
@@ -662,6 +694,51 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github-copilot.mrs"
     interval: 86400
 
+  xai:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/xai.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/xai.mrs"
+    interval: 86400
+
+  huggingface:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/huggingface.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/huggingface.mrs"
+    interval: 86400
+
+  bytedance_ai:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bytedance_ai.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bytedance-ai-!cn.mrs"
+    interval: 86400
+
+  deepseek:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/deepseek.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/deepseek.mrs"
+    interval: 86400
+
+  ai_chat:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ai_chat.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-chat-!cn.mrs"
+    interval: 86400
+
   microsoft_cn:
     type: http
     proxy: PROXY
@@ -723,6 +800,33 @@ rule-providers:
     format: mrs
     path: ./rule_providers/apple_music.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-music.mrs"
+    interval: 86400
+
+  apple_music_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_music_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-music@cn.mrs"
+    interval: 86400
+
+  apple_tv:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_tv.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-tvplus.mrs"
+    interval: 86400
+
+  apple_podcasts:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_podcasts.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-podcasts.mrs"
     interval: 86400
 
   apple_dev:
@@ -788,6 +892,15 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili-cdn.mrs"
     interval: 86400
 
+  bilibili_game:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bilibili_game.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili-game.mrs"
+    interval: 86400
+
   bilibili_oversea:
     type: http
     proxy: PROXY
@@ -831,6 +944,15 @@ rule-providers:
     format: mrs
     path: ./rule_providers/pixiv.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/pixiv.mrs"
+    interval: 86400
+
+  media:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/media.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-media.mrs"
     interval: 86400
 
   telegram:
@@ -878,6 +1000,87 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/discord.mrs"
     interval: 86400
 
+  social_media_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/social_media_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-social-media-cn.mrs"
+    interval: 86400
+
+  remote_control:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/remote_control.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-remote-control.mrs"
+    interval: 86400
+
+  netdisk_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/netdisk_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-netdisk-cn.mrs"
+    interval: 86400
+
+  netdisk_global:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/netdisk_global.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-netdisk-!cn.mrs"
+    interval: 86400
+
+  scholar_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/scholar_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-scholar-cn.mrs"
+    interval: 86400
+
+  scholar_global:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/scholar_global.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-scholar-!cn.mrs"
+    interval: 86400
+
+  cdn_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/cdn_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-cdn-cn.mrs"
+    interval: 86400
+
+  cdn_global:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/cdn_global.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-cdn-!cn.mrs"
+    interval: 86400
+
+  pt:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/pt.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-pt.mrs"
+    interval: 86400
+
   github:
     type: http
     proxy: PROXY
@@ -885,6 +1088,15 @@ rule-providers:
     format: mrs
     path: ./rule_providers/github.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github.mrs"
+    interval: 86400
+
+  dev:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/dev.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-dev.mrs"
     interval: 86400
 
   steam_cn:
@@ -914,6 +1126,33 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games@cn.mrs"
     interval: 86400
 
+  games_category_cn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/games_category_cn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games-cn.mrs"
+    interval: 86400
+
+  games_category:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/games_category.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games.mrs"
+    interval: 86400
+
+  games_oversea:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/games_oversea.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-games-!cn.mrs"
+    interval: 86400
+
   geolocation_non_cn:
     type: http
     proxy: PROXY
@@ -941,6 +1180,60 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs"
     interval: 86400
 
+  ip_netflix:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_netflix.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/netflix.mrs"
+    interval: 86400
+
+  ip_facebook:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_facebook.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/facebook.mrs"
+    interval: 86400
+
+  ip_tor:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_tor.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/tor.mrs"
+    interval: 86400
+
+  ip_cloudflare:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_cloudflare.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cloudflare.mrs"
+    interval: 86400
+
+  ip_cloudfront:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_cloudfront.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cloudfront.mrs"
+    interval: 86400
+
+  ip_fastly:
+    type: http
+    proxy: PROXY
+    behavior: ipcidr
+    format: mrs
+    path: ./rule_providers/ip_fastly.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/fastly.mrs"
+    interval: 86400
+
 rules:
   # Custom
   - IP-CIDR,198.13.57.54/32,DIRECT,no-resolve
@@ -956,6 +1249,8 @@ rules:
   - RULE-SET,doh,DIRECT
   - RULE-SET,speedtest,DIRECT
   - RULE-SET,ip_geo_detect,DIRECT
+  - RULE-SET,stun,DIRECT
+  - RULE-SET,ddns,DIRECT
 
   # Ads
   - RULE-SET,ads,Ads
@@ -968,6 +1263,7 @@ rules:
   # Copilot is AI traffic, so it must match before the general GitHub set.
   - RULE-SET,github_copilot,Microsoft-AI
   - RULE-SET,github,GitHub
+  - RULE-SET,dev,Development
 
   # ------------------------------------------------------------
   # AI：比 Google / Microsoft 大集合优先
@@ -976,6 +1272,13 @@ rules:
   - RULE-SET,openai,OpenAI
   - RULE-SET,anthropic,Anthropic
   - RULE-SET,google_gemini,Google-AI
+  - RULE-SET,xai,Other-AI
+  - RULE-SET,huggingface,Other-AI
+  - RULE-SET,bytedance_ai,Other-AI
+  - RULE-SET,ai_chat,Other-AI
+
+  # DeepSeek is reachable from the mainland, so keep it on the CN group.
+  - RULE-SET,deepseek,CN
 
   - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft-AI
   - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft-AI
@@ -1006,6 +1309,9 @@ rules:
 
   - RULE-SET,apple_cn,Apple-CN
   - RULE-SET,apple_music,Apple-Music
+  - RULE-SET,apple_music_cn,Apple-Music
+  - RULE-SET,apple_tv,Apple
+  - RULE-SET,apple_podcasts,Apple
   - RULE-SET,apple_dev,Apple
   - RULE-SET,apple_ai,Apple
   - RULE-SET,apple_pki,Apple
@@ -1022,10 +1328,13 @@ rules:
   - RULE-SET,bilibili_oversea,BiliIntl
   - RULE-SET,bilibili,Bilibili
   - RULE-SET,bilibili_cdn,Bilibili
+  - RULE-SET,bilibili_game,Bilibili
 
   - RULE-SET,bahamut,Bahamut
   - RULE-SET,ehentai,EHentai
   - RULE-SET,pixiv,Pixiv
+
+  - RULE-SET,media,Media
 
   # ------------------------------------------------------------
   # Communication / Social
@@ -1038,6 +1347,7 @@ rules:
   - RULE-SET,twitter_ip,Twitter-IP,no-resolve
 
   - RULE-SET,discord,Discord
+  - RULE-SET,social_media_cn,CN
 
   # ------------------------------------------------------------
   # Games
@@ -1045,7 +1355,23 @@ rules:
 
   - RULE-SET,steam_cn,Steam-CN
   - RULE-SET,games_cn,Games-CN
+  - RULE-SET,games_category_cn,Games-CN
   - RULE-SET,steam,Steam
+  - RULE-SET,games_category,Games
+  - RULE-SET,games_oversea,Games
+
+  # ------------------------------------------------------------
+  # Storage / Utility
+  # ------------------------------------------------------------
+
+  - RULE-SET,netdisk_cn,CN
+  - RULE-SET,netdisk_global,Non-CN
+  - RULE-SET,scholar_cn,CN
+  - RULE-SET,scholar_global,Non-CN
+  - RULE-SET,cdn_cn,CN
+  - RULE-SET,cdn_global,Non-CN
+  - RULE-SET,pt,Non-CN
+  - RULE-SET,remote_control,Remote-Control
 
   # ------------------------------------------------------------
   # 剩余 AI
@@ -1062,6 +1388,15 @@ rules:
 
   - RULE-SET,cn,CN
   - RULE-SET,cn_ip,CN-IP,no-resolve
+
+  # IP-only fallbacks; Cloudflare/CloudFront/Fastly come last so that
+  # streaming and social sets above keep their policy.
+  - RULE-SET,ip_netflix,Media,no-resolve
+  - RULE-SET,ip_facebook,Non-CN,no-resolve
+  - RULE-SET,ip_tor,Non-CN,no-resolve
+  - RULE-SET,ip_cloudflare,DIRECT,no-resolve
+  - RULE-SET,ip_cloudfront,DIRECT,no-resolve
+  - RULE-SET,ip_fastly,DIRECT,no-resolve
 
   - MATCH,MATCH
 
