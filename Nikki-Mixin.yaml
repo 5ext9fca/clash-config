@@ -12,13 +12,14 @@
 # Do not replace the main subscription profile with this overlay.
 # Nodes, providers, proxy groups and routing rules stay in the main profile.
 # API TLS fields were Unmodified in the screenshot and are intentionally omitted.
+#
+# Nikki deep-merges this file over the profile, so only the values that differ
+# from MySubscription-Common.yaml are listed. Everything else (DNS resolvers,
+# fake-ip filter, nameserver policy, sniffer ports, store-selected) is inherited.
 
 mode: rule
-log-level: info
-ipv6: false
 find-process-mode: 'off'
-unified-delay: true
-tcp-concurrent: true
+
 allow-lan: true
 bind-address: '*'
 port: 0
@@ -26,75 +27,22 @@ socks-port: 0
 mixed-port: 0
 redir-port: 0
 tproxy-port: 7893
+
 external-controller: 0.0.0.0:9090
 secret: 43115781urso;
 external-ui: ui
 external-ui-url: https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+
 profile:
-  store-selected: true
   store-fake-ip: false
+
 tun:
   enable: false
   auto-route: false
   auto-redirect: false
   auto-detect-interface: false
   dns-hijack: []
+
+# redir-host is required because clients reach Mihomo through AGH.
 dns:
-  enable: true
-  listen: 127.0.0.1:1053
-  ipv6: false
   enhanced-mode: redir-host
-  fake-ip-range: 198.18.0.1/16
-  respect-rules: false
-  default-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
-  nameserver:
-    - https://1.1.1.1/dns-query#PROXY
-    - https://8.8.8.8/dns-query#PROXY
-  proxy-server-nameserver:
-    - https://dns.alidns.com/dns-query#DIRECT
-    - https://doh.pub/dns-query#DIRECT
-  fake-ip-filter:
-    - '*.lan'
-    - '*.local'
-    - +.cuhk.edu.cn
-    - localhost.ptlogin2.qq.com
-    - +.msftconnecttest.com
-    - +.msftncsi.com
-    - time.*.com
-    - time.*.gov
-    - time.*.edu.cn
-    - time.*.apple.com
-  nameserver-policy:
-    api.usfoo.com:
-      - https://dns.alidns.com/dns-query#DIRECT
-      - https://doh.pub/dns-query#DIRECT
-    +.cuhk.edu.cn:
-      - 10.20.220.50
-    rule-set:cn:
-      - https://dns.alidns.com/dns-query#DIRECT
-      - https://doh.pub/dns-query#DIRECT
-sniffer:
-  enable: true
-  force-dns-mapping: true
-  parse-pure-ip: true
-  override-destination: false
-  sniff:
-    HTTP:
-      ports:
-        - 80
-        - 8080-8880
-    TLS:
-      ports:
-        - 443
-        - 8443
-    QUIC:
-      ports:
-        - 443
-        - 8443
-  skip-domain:
-    - +.cuhk.edu.cn
-    - +.lan
-    - +.local
-    - Mijia Cloud
