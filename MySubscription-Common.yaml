@@ -297,13 +297,6 @@ proxy-groups:
       - Vultr-JP
       - Vultr-SG
 
-  - name: Apple-IP
-    type: select
-    proxies:
-      - Apple
-      - DIRECT
-      - PROXY
-
   - name: Twitch
     type: select
     proxies:
@@ -315,13 +308,6 @@ proxy-groups:
   - name: Bilibili
     type: select
     proxies:
-      - DIRECT
-      - PROXY
-
-  - name: Bilibili-IP
-    type: select
-    proxies:
-      - Bilibili
       - DIRECT
       - PROXY
 
@@ -658,22 +644,13 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple.mrs"
     interval: 86400
 
-  applemusic:
+  apple_music:
     type: http
     proxy: PROXY
     behavior: domain
     format: mrs
-    path: ./rule_providers/applemusic.mrs
-    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/applemusic.mrs"
-    interval: 86400
-
-  apple_ip:
-    type: http
-    proxy: PROXY
-    behavior: ipcidr
-    format: mrs
-    path: ./rule_providers/apple_ip.mrs
-    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/apple.mrs"
+    path: ./rule_providers/apple_music.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-music.mrs"
     interval: 86400
 
   twitch:
@@ -692,15 +669,6 @@ rule-providers:
     format: mrs
     path: ./rule_providers/bilibili.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili.mrs"
-    interval: 86400
-
-  bilibili_ip:
-    type: http
-    proxy: PROXY
-    behavior: ipcidr
-    format: mrs
-    path: ./rule_providers/bilibili_ip.mrs
-    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/bilibili.mrs"
     interval: 86400
 
   biliintl:
@@ -908,9 +876,8 @@ rules:
   # ------------------------------------------------------------
 
   - RULE-SET,apple_cn,Apple-CN
-  - RULE-SET,applemusic,Apple-Music
+  - RULE-SET,apple_music,Apple-Music
   - RULE-SET,apple,Apple
-  - RULE-SET,apple_ip,Apple-IP,no-resolve
 
   # ------------------------------------------------------------
   # Content
@@ -920,7 +887,6 @@ rules:
 
   - RULE-SET,biliintl,BiliIntl
   - RULE-SET,bilibili,Bilibili
-  - RULE-SET,bilibili_ip,Bilibili-IP,no-resolve
 
   - RULE-SET,bahamut,Bahamut
   - RULE-SET,ehentai,EHentai
