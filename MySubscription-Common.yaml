@@ -156,7 +156,6 @@ x-proxy-lists:
   proxied_or_direct: &proxied_or_direct [PROXY, AUTO, FALLBACK, DIRECT]
   direct_first: &direct_first [DIRECT, PROXY]
   ai_nodes: &ai_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK]
-  microsoft_first: &microsoft_first [DIRECT, Microsoft, PROXY, AUTO]
 
 proxy-groups:
   # Manual selector. Only PROXY, AUTO and FALLBACK consume the Airport
@@ -185,17 +184,14 @@ proxy-groups:
   # ------------------------------------------------------------
   # Microsoft
   # ------------------------------------------------------------
-  - {name: Microsoft-CN, type: select, proxies: [DIRECT, Microsoft, PROXY]}
+  # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
   - {name: Microsoft, type: select, proxies: [DIRECT, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
-  - {name: OneDrive, type: select, proxies: *microsoft_first}
-  - {name: Xbox, type: select, proxies: *microsoft_first}
+  - {name: OneDrive, type: select, proxies: [DIRECT, Microsoft, PROXY, AUTO]}
 
   # ------------------------------------------------------------
   # Apple
   # ------------------------------------------------------------
-  - {name: Apple-CN, type: select, proxies: [DIRECT, Apple, PROXY]}
   - {name: Apple, type: select, proxies: [DIRECT, PROXY, AUTO, Vultr-JP, Vultr-SG]}
-  - {name: Apple-Music, type: select, proxies: [DIRECT, Apple, PROXY, Vultr-JP, Vultr-SG]}
 
   # ------------------------------------------------------------
   # Content
@@ -204,8 +200,8 @@ proxy-groups:
   - {name: Bilibili, type: select, proxies: *direct_first}
   - {name: BiliIntl, type: select, proxies: *proxied_quick}
   - {name: Bahamut, type: select, proxies: *proxied_quick}
-  - {name: EHentai, type: select, proxies: *proxied_quick}
-  - {name: Pixiv, type: select, proxies: *proxied_quick}
+  # 日区服务（Pixiv、EHentai）共用一个选择器。
+  - {name: Japan, type: select, proxies: *proxied_quick}
   - {name: Media, type: select, proxies: *proxied_or_direct}
 
   # ------------------------------------------------------------
@@ -220,11 +216,9 @@ proxy-groups:
   # ------------------------------------------------------------
   # AI
   # ------------------------------------------------------------
-  - {name: OpenAI, type: select, proxies: *ai_nodes}
+  # 除 Anthropic 外的 AI 流量共用一组；Anthropic 保留独立选择器。
+  - {name: AI, type: select, proxies: *ai_nodes}
   - {name: Anthropic, type: select, proxies: *ai_nodes}
-  - {name: Google-AI, type: select, proxies: [Google, Vultr-SG, Vultr-JP, PROXY]}
-  - {name: Microsoft-AI, type: select, proxies: [Microsoft, PROXY, Vultr-SG, Vultr-JP]}
-  - {name: Other-AI, type: select, proxies: [PROXY, Vultr-SG, DIRECT]}
 
   # ------------------------------------------------------------
   # Games
@@ -366,7 +360,7 @@ rules:
   # ------------------------------------------------------------
 
   # Copilot is AI traffic, so it must match before the general GitHub set.
-  - RULE-SET,github_copilot,Microsoft-AI
+  - RULE-SET,github_copilot,AI
   - RULE-SET,github,GitHub
   - RULE-SET,dev,Development
 
@@ -374,19 +368,19 @@ rules:
   # AI：比 Google / Microsoft 大集合优先
   # ------------------------------------------------------------
 
-  - RULE-SET,openai,OpenAI
+  - RULE-SET,openai,AI
   - RULE-SET,anthropic,Anthropic
-  - RULE-SET,google_gemini,Google-AI
-  - RULE-SET,xai,Other-AI
-  - RULE-SET,huggingface,Other-AI
-  - RULE-SET,bytedance_ai,Other-AI
-  - RULE-SET,ai_chat,Other-AI
+  - RULE-SET,google_gemini,AI
+  - RULE-SET,xai,AI
+  - RULE-SET,huggingface,AI
+  - RULE-SET,bytedance_ai,AI
+  - RULE-SET,ai_chat,AI
 
   # DeepSeek is reachable from the mainland, so keep it on the CN group.
   - RULE-SET,deepseek,CN
 
-  - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft-AI
-  - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft-AI
+  - DOMAIN-SUFFIX,copilot.microsoft.com,AI
+  - DOMAIN-SUFFIX,m365.cloud.microsoft,AI
 
   # ------------------------------------------------------------
   # Google / GoogleFCM / YouTube
@@ -403,18 +397,18 @@ rules:
   # Microsoft
   # ------------------------------------------------------------
 
-  - RULE-SET,microsoft_cn,Microsoft-CN
+  - RULE-SET,microsoft_cn,Microsoft
   - RULE-SET,onedrive,OneDrive
-  - RULE-SET,xbox,Xbox
+  - RULE-SET,xbox,Microsoft
   - RULE-SET,microsoft,Microsoft
 
   # ------------------------------------------------------------
   # Apple
   # ------------------------------------------------------------
 
-  - RULE-SET,apple_cn,Apple-CN
-  - RULE-SET,apple_music,Apple-Music
-  - RULE-SET,apple_music_cn,Apple-Music
+  - RULE-SET,apple_cn,Apple
+  - RULE-SET,apple_music,Apple
+  - RULE-SET,apple_music_cn,Apple
   - RULE-SET,apple_tv,Apple
   - RULE-SET,apple_podcasts,Apple
   - RULE-SET,apple_dev,Apple
@@ -436,8 +430,8 @@ rules:
   - RULE-SET,bilibili_game,Bilibili
 
   - RULE-SET,bahamut,Bahamut
-  - RULE-SET,ehentai,EHentai
-  - RULE-SET,pixiv,Pixiv
+  - RULE-SET,ehentai,Japan
+  - RULE-SET,pixiv,Japan
 
   - RULE-SET,media,Media
 
@@ -483,7 +477,7 @@ rules:
   # 放在各平台专属规则之后
   # ------------------------------------------------------------
 
-  - RULE-SET,ai_global,Other-AI
+  - RULE-SET,ai_global,AI
 
   # ------------------------------------------------------------
   # 通用分流
