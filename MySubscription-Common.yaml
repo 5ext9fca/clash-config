@@ -155,12 +155,13 @@ x-proxy-lists:
   proxied_quick: &proxied_quick [PROXY, AUTO, Vultr-JP, Vultr-SG]
   proxied_or_direct: &proxied_or_direct [PROXY, AUTO, FALLBACK, DIRECT]
   direct_first: &direct_first [DIRECT, PROXY]
-  ai_nodes: &ai_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK]
+  anthropic_nodes: &anthropic_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK]  # Anthropic only
 
 proxy-groups:
-  # Manual selector. Only PROXY, AUTO and FALLBACK consume the Airport
-  # provider; the remaining groups reference them, so the airport nodes are
-  # listed and health-checked once instead of in every selector.
+  # Default exit convention: CN-region traffic ends on DIRECT, every other
+  # service starts at PROXY, Japan pins Vultr-JP, Anthropic pins Vultr-SG.
+  # Only PROXY, AUTO and FALLBACK consume the Airport provider; the remaining
+  # groups reference them, so airport nodes are listed and checked once.
   - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], use: [Airport]}
   - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
 
@@ -185,13 +186,13 @@ proxy-groups:
   # Microsoft
   # ------------------------------------------------------------
   # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
-  - {name: Microsoft, type: select, proxies: [DIRECT, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
-  - {name: OneDrive, type: select, proxies: [DIRECT, Microsoft, PROXY, AUTO]}
+  - {name: Microsoft, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
+  - {name: OneDrive, type: select, proxies: [PROXY, Microsoft, DIRECT, AUTO]}
 
   # ------------------------------------------------------------
   # Apple
   # ------------------------------------------------------------
-  - {name: Apple, type: select, proxies: [DIRECT, PROXY, AUTO, Vultr-JP, Vultr-SG]}
+  - {name: Apple, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
 
   # ------------------------------------------------------------
   # Content
@@ -200,8 +201,8 @@ proxy-groups:
   - {name: Bilibili, type: select, proxies: *direct_first}
   - {name: BiliIntl, type: select, proxies: *proxied_quick}
   - {name: Bahamut, type: select, proxies: *proxied_quick}
-  # 日区服务（Pixiv、EHentai）共用一个选择器。
-  - {name: Japan, type: select, proxies: *proxied_quick}
+  # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
+  - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
   - {name: Media, type: select, proxies: *proxied_or_direct}
 
   # ------------------------------------------------------------
@@ -216,17 +217,17 @@ proxy-groups:
   # ------------------------------------------------------------
   # AI
   # ------------------------------------------------------------
-  # 除 Anthropic 外的 AI 流量共用一组；Anthropic 保留独立选择器。
-  - {name: AI, type: select, proxies: *ai_nodes}
-  - {name: Anthropic, type: select, proxies: *ai_nodes}
+  # 除 Anthropic 外的 AI 流量共用一组，默认走 PROXY；Anthropic 保持 SG 优先。
+  - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: Anthropic, type: select, proxies: *anthropic_nodes}
 
   # ------------------------------------------------------------
   # Games
   # ------------------------------------------------------------
   - {name: Games-CN, type: select, proxies: [DIRECT, Games, PROXY]}
-  - {name: Games, type: select, proxies: [DIRECT, PROXY, AUTO, FALLBACK]}
+  - {name: Games, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
   - {name: Steam-CN, type: select, proxies: [DIRECT, Steam, PROXY]}
-  - {name: Steam, type: select, proxies: [DIRECT, Games, PROXY, AUTO]}
+  - {name: Steam, type: select, proxies: [PROXY, DIRECT, Games, AUTO]}
 
   # ------------------------------------------------------------
   # Utility / leftovers
@@ -397,7 +398,8 @@ rules:
   # Microsoft
   # ------------------------------------------------------------
 
-  - RULE-SET,microsoft_cn,Microsoft
+  # CN 子集走 CN 组（DIRECT），其余微软域名走 Microsoft 组。
+  - RULE-SET,microsoft_cn,CN
   - RULE-SET,onedrive,OneDrive
   - RULE-SET,xbox,Microsoft
   - RULE-SET,microsoft,Microsoft
@@ -406,9 +408,10 @@ rules:
   # Apple
   # ------------------------------------------------------------
 
-  - RULE-SET,apple_cn,Apple
+  # CN 子集走 CN 组（DIRECT），其余苹果域名走 Apple 组。
+  - RULE-SET,apple_cn,CN
   - RULE-SET,apple_music,Apple
-  - RULE-SET,apple_music_cn,Apple
+  - RULE-SET,apple_music_cn,CN
   - RULE-SET,apple_tv,Apple
   - RULE-SET,apple_podcasts,Apple
   - RULE-SET,apple_dev,Apple
