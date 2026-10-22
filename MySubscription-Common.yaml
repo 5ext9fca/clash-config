@@ -536,6 +536,51 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ads-all.mrs"
     interval: 86400
 
+  ads_telemetry:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ads_telemetry.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ads-and-telemetry.mrs"
+    interval: 86400
+
+  ntp:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ntp.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ntp.mrs"
+    interval: 86400
+
+  doh:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/doh.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-doh.mrs"
+    interval: 86400
+
+  speedtest:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/speedtest.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-speedtest.mrs"
+    interval: 86400
+
+  ip_geo_detect:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/ip_geo_detect.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ip-geo-detect.mrs"
+    interval: 86400
+
   google:
     type: http
     proxy: PROXY
@@ -588,6 +633,33 @@ rule-providers:
     format: mrs
     path: ./rule_providers/category-ai-not-cn.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-ai-!cn.mrs"
+    interval: 86400
+
+  anthropic:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/anthropic.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/anthropic.mrs"
+    interval: 86400
+
+  google_gemini:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/google_gemini.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/google-gemini.mrs"
+    interval: 86400
+
+  github_copilot:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/github_copilot.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/github-copilot.mrs"
     interval: 86400
 
   microsoft_cn:
@@ -653,6 +725,42 @@ rule-providers:
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-music.mrs"
     interval: 86400
 
+  apple_dev:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_dev.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-dev.mrs"
+    interval: 86400
+
+  apple_ai:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_ai.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-intelligence.mrs"
+    interval: 86400
+
+  apple_pki:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_pki.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-pki.mrs"
+    interval: 86400
+
+  apple_update:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/apple_update.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/apple-update.mrs"
+    interval: 86400
+
   twitch:
     type: http
     proxy: PROXY
@@ -669,6 +777,24 @@ rule-providers:
     format: mrs
     path: ./rule_providers/bilibili.mrs
     url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili.mrs"
+    interval: 86400
+
+  bilibili_cdn:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bilibili_cdn.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili-cdn.mrs"
+    interval: 86400
+
+  bilibili_oversea:
+    type: http
+    proxy: PROXY
+    behavior: domain
+    format: mrs
+    path: ./rule_providers/bilibili_oversea.mrs
+    url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bilibili@!cn.mrs"
     interval: 86400
 
   biliintl:
@@ -825,13 +951,22 @@ rules:
   - RULE-SET,private,Private
   - RULE-SET,private_ip,Private-IP,no-resolve
 
+  # Maintenance: keep time sync, DoH endpoints, speed tests and IP probes local
+  - RULE-SET,ntp,DIRECT
+  - RULE-SET,doh,DIRECT
+  - RULE-SET,speedtest,DIRECT
+  - RULE-SET,ip_geo_detect,DIRECT
+
   # Ads
   - RULE-SET,ads,Ads
+  - RULE-SET,ads_telemetry,Ads
 
   # ------------------------------------------------------------
   # Development
   # ------------------------------------------------------------
 
+  # Copilot is AI traffic, so it must match before the general GitHub set.
+  - RULE-SET,github_copilot,Microsoft-AI
   - RULE-SET,github,GitHub
 
   # ------------------------------------------------------------
@@ -839,14 +974,8 @@ rules:
   # ------------------------------------------------------------
 
   - RULE-SET,openai,OpenAI
-
-  - DOMAIN-SUFFIX,anthropic.com,Anthropic
-  - DOMAIN-SUFFIX,claude.ai,Anthropic
-
-  - DOMAIN-SUFFIX,gemini.google,Google-AI
-  - DOMAIN-SUFFIX,gemini.google.com,Google-AI
-  - DOMAIN-SUFFIX,aistudio.google.com,Google-AI
-  - DOMAIN-SUFFIX,ai.google.dev,Google-AI
+  - RULE-SET,anthropic,Anthropic
+  - RULE-SET,google_gemini,Google-AI
 
   - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft-AI
   - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft-AI
@@ -877,6 +1006,10 @@ rules:
 
   - RULE-SET,apple_cn,Apple-CN
   - RULE-SET,apple_music,Apple-Music
+  - RULE-SET,apple_dev,Apple
+  - RULE-SET,apple_ai,Apple
+  - RULE-SET,apple_pki,Apple
+  - RULE-SET,apple_update,Apple
   - RULE-SET,apple,Apple
 
   # ------------------------------------------------------------
@@ -886,7 +1019,9 @@ rules:
   - RULE-SET,twitch,Twitch
 
   - RULE-SET,biliintl,BiliIntl
+  - RULE-SET,bilibili_oversea,BiliIntl
   - RULE-SET,bilibili,Bilibili
+  - RULE-SET,bilibili_cdn,Bilibili
 
   - RULE-SET,bahamut,Bahamut
   - RULE-SET,ehentai,EHentai
