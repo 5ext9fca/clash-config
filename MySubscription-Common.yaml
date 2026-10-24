@@ -178,7 +178,6 @@ proxy-groups:
   # Google / GoogleFCM / YouTube
   # ------------------------------------------------------------
   - {name: Google, type: select, proxies: *proxied}
-  - {name: Google-IP, type: select, proxies: [Google, PROXY, AUTO, Vultr-JP, Vultr-SG]}
   - {name: YouTube, type: select, proxies: *proxied}
   - {name: GoogleFCM, type: select, proxies: [Google, PROXY, AUTO, DIRECT]}
 
@@ -209,9 +208,7 @@ proxy-groups:
   # Communication / Social
   # ------------------------------------------------------------
   - {name: Telegram, type: select, proxies: *proxied}
-  - {name: Telegram-IP, type: select, proxies: [Telegram, PROXY, AUTO, Vultr-JP, Vultr-SG]}
   - {name: Twitter, type: select, proxies: *proxied_quick}
-  - {name: Twitter-IP, type: select, proxies: [Twitter, PROXY, AUTO]}
   - {name: Discord, type: select, proxies: *proxied}
 
   # ------------------------------------------------------------
@@ -234,7 +231,6 @@ proxy-groups:
   # ------------------------------------------------------------
   - {name: Ads, type: select, proxies: [REJECT, DIRECT]}
   - {name: Private, type: select, proxies: *direct_first}
-  - {name: Private-IP, type: select, proxies: *direct_first}
   - {name: Remote-Control, type: select, proxies: *direct_first}
   - {name: NTP, type: select, proxies: *direct_first}
   - {name: DoH, type: select, proxies: *direct_first}
@@ -242,16 +238,15 @@ proxy-groups:
   - {name: IP-Geo-Detect, type: select, proxies: *direct_first}
   - {name: STUN, type: select, proxies: *direct_first}
   - {name: DDNS, type: select, proxies: *direct_first}
-  - {name: Cloudflare-IP, type: select, proxies: *direct_first}
-  - {name: CloudFront-IP, type: select, proxies: *direct_first}
-  - {name: Fastly-IP, type: select, proxies: *direct_first}
+  - {name: Cloudflare, type: select, proxies: *direct_first}
+  - {name: CloudFront, type: select, proxies: *direct_first}
+  - {name: Fastly, type: select, proxies: *direct_first}
 
   # ------------------------------------------------------------
   # 通用分流
   # ------------------------------------------------------------
   - {name: Non-CN, type: select, proxies: [PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
   - {name: CN, type: select, proxies: *direct_first}
-  - {name: CN-IP, type: select, proxies: *direct_first}
   - {name: MATCH, type: select, proxies: [PROXY, AUTO, FALLBACK, DIRECT, Vultr-JP, Vultr-SG]}
 
 # Every rule set shares the same fetch settings; only behavior, path and
@@ -351,7 +346,7 @@ rules:
 
   # Private
   - RULE-SET,private,Private
-  - RULE-SET,private_ip,Private-IP,no-resolve
+  - RULE-SET,private_ip,Private,no-resolve
 
   # Maintenance: default to DIRECT; each service can be selected independently
   - RULE-SET,ntp,NTP
@@ -401,7 +396,7 @@ rules:
   - RULE-SET,googlefcm,GoogleFCM
 
   - RULE-SET,google,Google
-  - RULE-SET,google_ip,Google-IP,no-resolve
+  - RULE-SET,google_ip,Google,no-resolve
 
   # ------------------------------------------------------------
   # Microsoft
@@ -452,10 +447,10 @@ rules:
   # ------------------------------------------------------------
 
   - RULE-SET,telegram,Telegram
-  - RULE-SET,telegram_ip,Telegram-IP,no-resolve
+  - RULE-SET,telegram_ip,Telegram,no-resolve
 
   - RULE-SET,twitter,Twitter
-  - RULE-SET,twitter_ip,Twitter-IP,no-resolve
+  - RULE-SET,twitter_ip,Twitter,no-resolve
 
   - RULE-SET,discord,Discord
   - RULE-SET,social_media_cn,CN
@@ -498,16 +493,16 @@ rules:
   - RULE-SET,geolocation_non_cn,Non-CN
 
   - RULE-SET,cn,CN
-  - RULE-SET,cn_ip,CN-IP,no-resolve
+  - RULE-SET,cn_ip,CN,no-resolve
 
   # IP-only fallbacks; Cloudflare/CloudFront/Fastly come last so that
   # streaming and social sets above keep their policy.
   - RULE-SET,ip_netflix,Media,no-resolve
   - RULE-SET,ip_facebook,Non-CN,no-resolve
   - RULE-SET,ip_tor,Non-CN,no-resolve
-  - RULE-SET,ip_cloudflare,Cloudflare-IP,no-resolve
-  - RULE-SET,ip_cloudfront,CloudFront-IP,no-resolve
-  - RULE-SET,ip_fastly,Fastly-IP,no-resolve
+  - RULE-SET,ip_cloudflare,Cloudflare,no-resolve
+  - RULE-SET,ip_cloudfront,CloudFront,no-resolve
+  - RULE-SET,ip_fastly,Fastly,no-resolve
 
   - MATCH,MATCH
 
