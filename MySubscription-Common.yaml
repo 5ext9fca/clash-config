@@ -236,6 +236,15 @@ proxy-groups:
   - {name: Private, type: select, proxies: *direct_first}
   - {name: Private-IP, type: select, proxies: *direct_first}
   - {name: Remote-Control, type: select, proxies: *direct_first}
+  - {name: NTP, type: select, proxies: *direct_first}
+  - {name: DoH, type: select, proxies: *direct_first}
+  - {name: Speedtest, type: select, proxies: *direct_first}
+  - {name: IP-Geo-Detect, type: select, proxies: *direct_first}
+  - {name: STUN, type: select, proxies: *direct_first}
+  - {name: DDNS, type: select, proxies: *direct_first}
+  - {name: Cloudflare-IP, type: select, proxies: *direct_first}
+  - {name: CloudFront-IP, type: select, proxies: *direct_first}
+  - {name: Fastly-IP, type: select, proxies: *direct_first}
 
   # ------------------------------------------------------------
   # 通用分流
@@ -344,13 +353,13 @@ rules:
   - RULE-SET,private,Private
   - RULE-SET,private_ip,Private-IP,no-resolve
 
-  # Maintenance: keep time sync, DoH endpoints, speed tests and IP probes local
-  - RULE-SET,ntp,DIRECT
-  - RULE-SET,doh,DIRECT
-  - RULE-SET,speedtest,DIRECT
-  - RULE-SET,ip_geo_detect,DIRECT
-  - RULE-SET,stun,DIRECT
-  - RULE-SET,ddns,DIRECT
+  # Maintenance: default to DIRECT; each service can be selected independently
+  - RULE-SET,ntp,NTP
+  - RULE-SET,doh,DoH
+  - RULE-SET,speedtest,Speedtest
+  - RULE-SET,ip_geo_detect,IP-Geo-Detect
+  - RULE-SET,stun,STUN
+  - RULE-SET,ddns,DDNS
 
   # Ads
   - RULE-SET,ads,Ads
@@ -496,9 +505,9 @@ rules:
   - RULE-SET,ip_netflix,Media,no-resolve
   - RULE-SET,ip_facebook,Non-CN,no-resolve
   - RULE-SET,ip_tor,Non-CN,no-resolve
-  - RULE-SET,ip_cloudflare,DIRECT,no-resolve
-  - RULE-SET,ip_cloudfront,DIRECT,no-resolve
-  - RULE-SET,ip_fastly,DIRECT,no-resolve
+  - RULE-SET,ip_cloudflare,Cloudflare-IP,no-resolve
+  - RULE-SET,ip_cloudfront,CloudFront-IP,no-resolve
+  - RULE-SET,ip_fastly,Fastly-IP,no-resolve
 
   - MATCH,MATCH
 
