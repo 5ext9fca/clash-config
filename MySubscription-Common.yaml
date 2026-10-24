@@ -158,79 +158,50 @@ x-proxy-lists:
   anthropic_nodes: &anthropic_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK]  # Anthropic only
 
 proxy-groups:
+  # Service providers are sorted by name; shared policies follow at the end.
+  # Candidate order controls routing defaults and is preserved.
   # Default exit convention: CN-region traffic ends on DIRECT, every other
   # service starts at PROXY, Japan pins Vultr-JP, Anthropic pins Vultr-SG.
   # Only PROXY, AUTO and FALLBACK consume the Airport provider; the remaining
   # groups reference them, so airport nodes are listed and checked once.
-  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], use: [Airport]}
-  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
-
-  # FALLBACK 顺序代表优先级：
-  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, lazy: true}
-
-  # ------------------------------------------------------------
-  # Development
-  # ------------------------------------------------------------
-  - {name: Development, type: select, proxies: *proxied_or_direct}
+  # Service providers
+  - {name: Anthropic, type: select, proxies: *anthropic_nodes}
+  - {name: Apple, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
+  - {name: Bahamut, type: select, proxies: *proxied_quick}
+  - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
+  # The ByteDance rule set contains only non-CN AI services.
+  - {name: ByteDance-Non-CN, type: select, proxies: [AI, PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: Cloudflare, type: select, proxies: *direct_first}
+  - {name: CloudFront, type: select, proxies: *direct_first}
+  - {name: Discord, type: select, proxies: *proxied}
+  - {name: Fastly, type: select, proxies: *direct_first}
   - {name: GitHub, type: select, proxies: [Development, PROXY, Vultr-JP, Vultr-SG, DIRECT]}
-
-  # ------------------------------------------------------------
-  # Google / YouTube
-  # ------------------------------------------------------------
   - {name: Google, type: select, proxies: *proxied}
+  - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: Microsoft, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
+  # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
+  - {name: OneDrive, type: select, proxies: [PROXY, Microsoft, DIRECT, AUTO]}
+  - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  # Spotify inherits Media until an independent exit is selected.
+  - {name: Spotify, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
+  - {name: Steam, type: select, proxies: [PROXY, DIRECT, Games, AUTO]}
+  - {name: Telegram, type: select, proxies: *proxied}
+  - {name: Twitch, type: select, proxies: *proxied_quick}
+  - {name: Twitter, type: select, proxies: *proxied_quick}
   - {name: YouTube, type: select, proxies: *proxied}
 
-  # ------------------------------------------------------------
-  # Microsoft
-  # ------------------------------------------------------------
-  # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
-  - {name: Microsoft, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
-  - {name: OneDrive, type: select, proxies: [PROXY, Microsoft, DIRECT, AUTO]}
-
-  # ------------------------------------------------------------
-  # Apple
-  # ------------------------------------------------------------
-  - {name: Apple, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
-
-  # ------------------------------------------------------------
-  # Content
-  # ------------------------------------------------------------
-  - {name: Twitch, type: select, proxies: *proxied_quick}
-  - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
-  - {name: Bahamut, type: select, proxies: *proxied_quick}
+  # Shared selectors, utilities and catch-all policies
+  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], use: [Airport]}
+  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
+  # FALLBACK 顺序代表优先级：
+  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, lazy: true}
+  - {name: Development, type: select, proxies: *proxied_or_direct}
+  # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
+  - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: Games, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
   # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
   - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
   - {name: Media, type: select, proxies: *proxied_or_direct}
-  # Spotify inherits Media until an independent exit is selected.
-  - {name: Spotify, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
-
-  # ------------------------------------------------------------
-  # Communication / Social
-  # ------------------------------------------------------------
-  - {name: Telegram, type: select, proxies: *proxied}
-  - {name: Twitter, type: select, proxies: *proxied_quick}
-  - {name: Discord, type: select, proxies: *proxied}
-
-  # ------------------------------------------------------------
-  # AI
-  # ------------------------------------------------------------
-  # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
-  - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: Anthropic, type: select, proxies: *anthropic_nodes}
-  - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  # The ByteDance rule set contains only non-CN AI services.
-  - {name: ByteDance-Non-CN, type: select, proxies: [AI, PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-
-  # ------------------------------------------------------------
-  # Games
-  # ------------------------------------------------------------
-  - {name: Games, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
-  - {name: Steam, type: select, proxies: [PROXY, DIRECT, Games, AUTO]}
-
-  # ------------------------------------------------------------
-  # Utility / leftovers
-  # ------------------------------------------------------------
   - {name: Ads, type: select, proxies: [REJECT, DIRECT]}
   - {name: Private, type: select, proxies: *direct_first}
   - {name: Remote-Control, type: select, proxies: *direct_first}
@@ -240,13 +211,6 @@ proxy-groups:
   - {name: IP-Geo-Detect, type: select, proxies: *direct_first}
   - {name: STUN, type: select, proxies: *direct_first}
   - {name: DDNS, type: select, proxies: *direct_first}
-  - {name: Cloudflare, type: select, proxies: *direct_first}
-  - {name: CloudFront, type: select, proxies: *direct_first}
-  - {name: Fastly, type: select, proxies: *direct_first}
-
-  # ------------------------------------------------------------
-  # 通用分流
-  # ------------------------------------------------------------
   - {name: Non-CN, type: select, proxies: [PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
   - {name: CN, type: select, proxies: *direct_first}
   - {name: MATCH, type: select, proxies: [PROXY, AUTO, FALLBACK, DIRECT, Vultr-JP, Vultr-SG]}
