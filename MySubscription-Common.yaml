@@ -73,6 +73,12 @@ dns:
     - 'https://dns.alidns.com/dns-query#DIRECT'
     - 'https://doh.pub/dns-query#DIRECT'
 
+  # Direct exits use domestic DNS while preserving campus and other policies.
+  direct-nameserver:
+    - 'https://dns.alidns.com/dns-query#DIRECT'
+    - 'https://doh.pub/dns-query#DIRECT'
+  direct-nameserver-follow-policy: true
+
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -383,8 +389,8 @@ rules:
 
   # CN 子集走 CN 组（DIRECT），其余苹果域名走 Apple 组。
   - RULE-SET,apple_cn,CN
-  - RULE-SET,apple_music,Apple
   - RULE-SET,apple_music_cn,CN
+  - RULE-SET,apple_music,Apple
   - RULE-SET,apple_tv,Apple
   - RULE-SET,apple_podcasts,Apple
   - RULE-SET,apple_dev,Apple
@@ -466,7 +472,8 @@ rules:
   - RULE-SET,geolocation_non_cn,Non-CN
 
   - RULE-SET,cn,CN
-  - RULE-SET,cn_ip,CN,no-resolve
+  # Resolve unmatched domains so fake-ip traffic can use the CN IP fallback.
+  - RULE-SET,cn_ip,CN
 
   # IP-only fallbacks; Cloudflare/CloudFront/Fastly come last so that
   # streaming and social sets above keep their policy.
