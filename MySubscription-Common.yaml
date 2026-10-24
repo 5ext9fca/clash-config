@@ -220,8 +220,6 @@ proxy-groups:
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: ByteDance, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: DeepSeek, type: select, proxies: [CN, PROXY, DIRECT]}
 
   # ------------------------------------------------------------
   # Games
@@ -384,10 +382,10 @@ rules:
   - RULE-SET,google_gemini,Google
   - RULE-SET,xai,Twitter
   - RULE-SET,huggingface,HuggingFace
-  - RULE-SET,bytedance_ai,ByteDance
+  - RULE-SET,bytedance_ai,AI
 
-  # DeepSeek keeps CN as its default through a dedicated provider selector.
-  - RULE-SET,deepseek,DeepSeek
+  # DeepSeek follows the CN policy.
+  - RULE-SET,deepseek,CN
 
   - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft
   - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft
