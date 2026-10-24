@@ -172,7 +172,7 @@ proxy-groups:
   # groups reference them, so airport nodes are listed and checked once.
   # Service providers
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
-  - {name: Apple, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
+  - {name: Apple-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
   - {name: Bahamut, type: select, proxies: *proxied_quick}
   - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
   # The ByteDance rule set contains only non-CN AI services.
@@ -184,13 +184,13 @@ proxy-groups:
   - {name: GitHub, type: select, proxies: [Development, PROXY, Vultr-JP, Vultr-SG, DIRECT]}
   - {name: Google, type: select, proxies: *proxied}
   - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: Microsoft, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
+  - {name: Microsoft-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
   # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
-  - {name: OneDrive, type: select, proxies: [PROXY, Microsoft, DIRECT, AUTO]}
+  - {name: OneDrive, type: select, proxies: [PROXY, Microsoft-Non-CN, DIRECT, AUTO]}
   - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   # Spotify inherits Media until an independent exit is selected.
   - {name: Spotify, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
-  - {name: Steam, type: select, proxies: [PROXY, DIRECT, Games, AUTO]}
+  - {name: Steam-Non-CN, type: select, proxies: [PROXY, DIRECT, Games-Non-CN, AUTO]}
   - {name: Telegram, type: select, proxies: *proxied}
   - {name: Twitch, type: select, proxies: *proxied_quick}
   - {name: Twitter, type: select, proxies: *proxied_quick}
@@ -204,7 +204,7 @@ proxy-groups:
   - {name: Development, type: select, proxies: *proxied_or_direct}
   # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
   - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: Games, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
+  - {name: Games-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
   # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
   - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
   - {name: Media, type: select, proxies: *proxied_or_direct}
@@ -359,8 +359,8 @@ rules:
   # DeepSeek follows the CN policy.
   - RULE-SET,deepseek,CN
 
-  - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft
-  - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft
+  - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft-Non-CN
+  - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft-Non-CN
 
   # ------------------------------------------------------------
   # Google / YouTube
@@ -377,27 +377,27 @@ rules:
   # Microsoft
   # ------------------------------------------------------------
 
-  # CN 子集走 CN 组（DIRECT），其余微软域名走 Microsoft 组。
+  # CN 子集走 CN 组（DIRECT），其余微软域名走 Microsoft-Non-CN 组。
   - RULE-SET,microsoft_cn,CN
   - RULE-SET,onedrive,OneDrive
-  - RULE-SET,xbox,Microsoft
-  - RULE-SET,microsoft,Microsoft
+  - RULE-SET,xbox,Microsoft-Non-CN
+  - RULE-SET,microsoft,Microsoft-Non-CN
 
   # ------------------------------------------------------------
   # Apple
   # ------------------------------------------------------------
 
-  # CN 子集走 CN 组（DIRECT），其余苹果域名走 Apple 组。
+  # CN 子集走 CN 组（DIRECT），其余苹果域名走 Apple-Non-CN 组。
   - RULE-SET,apple_cn,CN
   - RULE-SET,apple_music_cn,CN
-  - RULE-SET,apple_music,Apple
-  - RULE-SET,apple_tv,Apple
-  - RULE-SET,apple_podcasts,Apple
-  - RULE-SET,apple_dev,Apple
-  - RULE-SET,apple_ai,Apple
-  - RULE-SET,apple_pki,Apple
-  - RULE-SET,apple_update,Apple
-  - RULE-SET,apple,Apple
+  - RULE-SET,apple_music,Apple-Non-CN
+  - RULE-SET,apple_tv,Apple-Non-CN
+  - RULE-SET,apple_podcasts,Apple-Non-CN
+  - RULE-SET,apple_dev,Apple-Non-CN
+  - RULE-SET,apple_ai,Apple-Non-CN
+  - RULE-SET,apple_pki,Apple-Non-CN
+  - RULE-SET,apple_update,Apple-Non-CN
+  - RULE-SET,apple,Apple-Non-CN
 
   # ------------------------------------------------------------
   # Content
@@ -440,9 +440,9 @@ rules:
   - RULE-SET,steam_cn,CN
   - RULE-SET,games_cn,CN
   - RULE-SET,games_category_cn,CN
-  - RULE-SET,steam,Steam
-  - RULE-SET,games_category,Games
-  - RULE-SET,games_oversea,Games
+  - RULE-SET,steam,Steam-Non-CN
+  - RULE-SET,games_category,Games-Non-CN
+  - RULE-SET,games_oversea,Games-Non-CN
 
   # ------------------------------------------------------------
   # Storage / Utility
