@@ -202,12 +202,8 @@ proxy-groups:
   # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
   - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
   - {name: Media, type: select, proxies: *proxied_or_direct}
-  # Platform selectors inherit Media until an independent exit is selected.
-  - {name: Netflix, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
-  - {name: Disney, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
+  # Spotify inherits Media until an independent exit is selected.
   - {name: Spotify, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
-  - {name: HBO, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
-  - {name: PrimeVideo, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
 
   # ------------------------------------------------------------
   # Communication / Social
@@ -314,11 +310,7 @@ rule-providers:
   bahamut: {<<: *rule_provider, behavior: domain, path: ./rule_providers/bahamut.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/bahamut.mrs"}
   ehentai: {<<: *rule_provider, behavior: domain, path: ./rule_providers/ehentai.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/ehentai.mrs"}
   pixiv: {<<: *rule_provider, behavior: domain, path: ./rule_providers/pixiv.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/pixiv.mrs"}
-  netflix: {<<: *rule_provider, behavior: domain, path: ./rule_providers/netflix.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/netflix.mrs"}
-  disney: {<<: *rule_provider, behavior: domain, path: ./rule_providers/disney.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/disney.mrs"}
   spotify: {<<: *rule_provider, behavior: domain, path: ./rule_providers/spotify.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/spotify.mrs"}
-  hbo: {<<: *rule_provider, behavior: domain, path: ./rule_providers/hbo.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/hbo.mrs"}
-  primevideo: {<<: *rule_provider, behavior: domain, path: ./rule_providers/primevideo.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/primevideo.mrs"}
   media: {<<: *rule_provider, behavior: domain, path: ./rule_providers/media.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/category-media.mrs"}
   telegram: {<<: *rule_provider, behavior: domain, path: ./rule_providers/telegram.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/telegram.mrs"}
   telegram_ip: {<<: *rule_provider, behavior: ipcidr, path: ./rule_providers/telegram_ip.mrs, url: "https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/telegram.mrs"}
@@ -453,12 +445,8 @@ rules:
   - RULE-SET,ehentai,Japan
   - RULE-SET,pixiv,Japan
 
-  # Match individual platforms before the broad media category.
-  - RULE-SET,netflix,Netflix
-  - RULE-SET,disney,Disney
+  # Match Spotify before the broad media category.
   - RULE-SET,spotify,Spotify
-  - RULE-SET,hbo,HBO
-  - RULE-SET,primevideo,PrimeVideo
   - RULE-SET,media,Media
 
   # ------------------------------------------------------------
@@ -517,7 +505,7 @@ rules:
 
   # IP-only fallbacks; Cloudflare/CloudFront/Fastly come last so that
   # streaming and social sets above keep their policy.
-  - RULE-SET,ip_netflix,Netflix,no-resolve
+  - RULE-SET,ip_netflix,Media,no-resolve
   - RULE-SET,ip_facebook,Non-CN,no-resolve
   - RULE-SET,ip_tor,Non-CN,no-resolve
   - RULE-SET,ip_cloudflare,Cloudflare,no-resolve
