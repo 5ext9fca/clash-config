@@ -213,9 +213,14 @@ proxy-groups:
   # ------------------------------------------------------------
   # AI
   # ------------------------------------------------------------
-  # 除 Anthropic 外的 AI 流量共用一组，默认走 PROXY；Anthropic 保持 SG 优先。
+  # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
   - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
+  - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: xAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: ByteDance, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: DeepSeek, type: select, proxies: [CN, PROXY, DIRECT]}
 
   # ------------------------------------------------------------
   # Games
@@ -363,8 +368,8 @@ rules:
   # Development
   # ------------------------------------------------------------
 
-  # Copilot is AI traffic, so it must match before the general GitHub set.
-  - RULE-SET,github_copilot,AI
+  # GitHub Copilot follows the GitHub service policy.
+  - RULE-SET,github_copilot,GitHub
   - RULE-SET,github,GitHub
   - RULE-SET,dev,Development
 
@@ -372,19 +377,18 @@ rules:
   # AI：比 Google / Microsoft 大集合优先
   # ------------------------------------------------------------
 
-  - RULE-SET,openai,AI
+  - RULE-SET,openai,OpenAI
   - RULE-SET,anthropic,Anthropic
   - RULE-SET,google_gemini,Google
-  - RULE-SET,xai,AI
-  - RULE-SET,huggingface,AI
-  - RULE-SET,bytedance_ai,AI
-  - RULE-SET,ai_chat,AI
+  - RULE-SET,xai,xAI
+  - RULE-SET,huggingface,HuggingFace
+  - RULE-SET,bytedance_ai,ByteDance
 
-  # DeepSeek is reachable from the mainland, so keep it on the CN group.
-  - RULE-SET,deepseek,CN
+  # DeepSeek keeps CN as its default through a dedicated provider selector.
+  - RULE-SET,deepseek,DeepSeek
 
-  - DOMAIN-SUFFIX,copilot.microsoft.com,AI
-  - DOMAIN-SUFFIX,m365.cloud.microsoft,AI
+  - DOMAIN-SUFFIX,copilot.microsoft.com,Microsoft
+  - DOMAIN-SUFFIX,m365.cloud.microsoft,Microsoft
 
   # ------------------------------------------------------------
   # Google / YouTube
@@ -483,6 +487,7 @@ rules:
   # 放在各平台专属规则之后
   # ------------------------------------------------------------
 
+  - RULE-SET,ai_chat,AI
   - RULE-SET,ai_global,AI
 
   # ------------------------------------------------------------
