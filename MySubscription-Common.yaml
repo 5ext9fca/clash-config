@@ -175,11 +175,10 @@ proxy-groups:
   - {name: GitHub, type: select, proxies: [Development, PROXY, Vultr-JP, Vultr-SG, DIRECT]}
 
   # ------------------------------------------------------------
-  # Google / GoogleFCM / YouTube
+  # Google / YouTube
   # ------------------------------------------------------------
   - {name: Google, type: select, proxies: *proxied}
   - {name: YouTube, type: select, proxies: *proxied}
-  - {name: GoogleFCM, type: select, proxies: [Google, PROXY, AUTO, DIRECT]}
 
   # ------------------------------------------------------------
   # Microsoft
@@ -375,7 +374,7 @@ rules:
 
   - RULE-SET,openai,AI
   - RULE-SET,anthropic,Anthropic
-  - RULE-SET,google_gemini,AI
+  - RULE-SET,google_gemini,Google
   - RULE-SET,xai,AI
   - RULE-SET,huggingface,AI
   - RULE-SET,bytedance_ai,AI
@@ -388,12 +387,12 @@ rules:
   - DOMAIN-SUFFIX,m365.cloud.microsoft,AI
 
   # ------------------------------------------------------------
-  # Google / GoogleFCM / YouTube
+  # Google / YouTube
   # ------------------------------------------------------------
 
   - RULE-SET,youtube,YouTube
 
-  - RULE-SET,googlefcm,GoogleFCM
+  - RULE-SET,googlefcm,Google
 
   - RULE-SET,google,Google
   - RULE-SET,google_ip,Google,no-resolve
