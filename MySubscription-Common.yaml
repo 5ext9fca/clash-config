@@ -217,7 +217,6 @@ proxy-groups:
   - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
-  - {name: xAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: ByteDance, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: DeepSeek, type: select, proxies: [CN, PROXY, DIRECT]}
@@ -380,7 +379,7 @@ rules:
   - RULE-SET,openai,OpenAI
   - RULE-SET,anthropic,Anthropic
   - RULE-SET,google_gemini,Google
-  - RULE-SET,xai,xAI
+  - RULE-SET,xai,Twitter
   - RULE-SET,huggingface,HuggingFace
   - RULE-SET,bytedance_ai,ByteDance
 
