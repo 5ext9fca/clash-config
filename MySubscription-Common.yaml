@@ -196,8 +196,7 @@ proxy-groups:
   # Content
   # ------------------------------------------------------------
   - {name: Twitch, type: select, proxies: *proxied_quick}
-  - {name: Bilibili, type: select, proxies: *direct_first}
-  - {name: BiliIntl, type: select, proxies: *proxied_quick}
+  - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
   - {name: Bahamut, type: select, proxies: *proxied_quick}
   # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
   - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
@@ -220,13 +219,13 @@ proxy-groups:
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
   - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  # The ByteDance rule set contains only non-CN AI services.
+  - {name: ByteDance-Non-CN, type: select, proxies: [AI, PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
 
   # ------------------------------------------------------------
   # Games
   # ------------------------------------------------------------
-  - {name: Games-CN, type: select, proxies: [DIRECT, Games, PROXY]}
   - {name: Games, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
-  - {name: Steam-CN, type: select, proxies: [DIRECT, Steam, PROXY]}
   - {name: Steam, type: select, proxies: [PROXY, DIRECT, Games, AUTO]}
 
   # ------------------------------------------------------------
@@ -382,7 +381,7 @@ rules:
   - RULE-SET,google_gemini,Google
   - RULE-SET,xai,Twitter
   - RULE-SET,huggingface,HuggingFace
-  - RULE-SET,bytedance_ai,AI
+  - RULE-SET,bytedance_ai,ByteDance-Non-CN
 
   # DeepSeek follows the CN policy.
   - RULE-SET,deepseek,CN
@@ -433,11 +432,12 @@ rules:
 
   - RULE-SET,twitch,Twitch
 
-  - RULE-SET,biliintl,BiliIntl
-  - RULE-SET,bilibili_oversea,BiliIntl
-  - RULE-SET,bilibili,Bilibili
-  - RULE-SET,bilibili_cdn,Bilibili
-  - RULE-SET,bilibili_game,Bilibili
+  # Match international services before the domestic Bilibili sets.
+  - RULE-SET,biliintl,Bilibili-Non-CN
+  - RULE-SET,bilibili_oversea,Bilibili-Non-CN
+  - RULE-SET,bilibili,CN
+  - RULE-SET,bilibili_cdn,CN
+  - RULE-SET,bilibili_game,CN
 
   - RULE-SET,bahamut,Bahamut
   - RULE-SET,ehentai,Japan
@@ -464,9 +464,9 @@ rules:
   # Games
   # ------------------------------------------------------------
 
-  - RULE-SET,steam_cn,Steam-CN
-  - RULE-SET,games_cn,Games-CN
-  - RULE-SET,games_category_cn,Games-CN
+  - RULE-SET,steam_cn,CN
+  - RULE-SET,games_cn,CN
+  - RULE-SET,games_category_cn,CN
   - RULE-SET,steam,Steam
   - RULE-SET,games_category,Games
   - RULE-SET,games_oversea,Games
