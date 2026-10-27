@@ -98,6 +98,10 @@ dns:
       - 'https://doh.pub/dns-query#DIRECT'
     '+.cuhk.edu.cn':
       - 10.20.220.50
+    # Resolve through the selected proxy so DNS and traffic stay on the same exit.
+    '+.eixeix.com':
+      - 'https://1.1.1.1/dns-query#PROXY'
+      - 'https://8.8.8.8/dns-query#PROXY'
     'rule-set:cn':
       - 'https://dns.alidns.com/dns-query#DIRECT'
       - 'https://doh.pub/dns-query#DIRECT'
@@ -319,6 +323,7 @@ rules:
   - IP-CIDR,198.13.57.54/32,DIRECT,no-resolve
   - IP-CIDR,139.180.209.160/32,DIRECT,no-resolve
   - DOMAIN-SUFFIX,cuhk.edu.cn,DIRECT
+  - DOMAIN-SUFFIX,eixeix.com,PROXY
 
   # Private
   - RULE-SET,private,Private
