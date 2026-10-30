@@ -27,28 +27,56 @@ User-Agent，也不接受客户端传入任意上游 URL。测试全部使用模
 
 ## 部署
 
-服务器需要系统安装的 Python 3.11+（示例为 `/usr/bin/python3`）、uv 和 HTTPS 反向代理。在服务器 checkout 中运行：
+服务器只需 Docker Engine 和 Docker Compose 插件，不需要在宿主机安装 Python、
+uv 或 systemd 服务。Compose 启动应用与 Caddy，只有 Caddy 发布公网端口；
+应用通过容器网络提供服务，8080 不映射到宿主机。
+
+在服务器 checkout 中运行：
 
 ```sh
 cd clash/server
-uv sync --locked --python /usr/bin/python3
 cp settings.example.yaml settings.yaml
-chmod 600 settings.yaml
-python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+cp .env.example .env
+# 构建应用镜像；构建过程不会读取或访问订阅。
+CONFIG_DOMAIN=config.example.com docker compose build app
+# 每台设备单独运行一次，将输出填入 settings.yaml。
+CONFIG_DOMAIN=config.example.com docker compose run --rm --no-deps app python -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-为每台设备分别生成令牌并替换 `settings.yaml` 中的占位值。占位令牌会被拒绝。
-服务账号必须能读取配置文件和 Common。不要将仓库目录设为 Web 静态根目录。
+编辑 `.env` 中的 `CONFIG_DOMAIN` 为真实域名，并为 `settings.yaml` 中每台设备
+填写独立令牌；占位令牌会被拒绝。Common 路径保留默认相对路径，Compose 会将
+两个文件挂载到匹配的容器路径。不要填宿主机绝对路径。
+
+应用固定以 UID/GID `10001:10001` 运行；在 Linux 服务器上设置读取权限：
 
 ```sh
-uv run --locked gunicorn --config gunicorn.conf.py 'app:create_app()'
+sudo chown 10001:10001 settings.yaml
+sudo chmod 600 settings.yaml
+# Common 默认应可读；若权限收紧，也需允许容器 UID 10001 读取。
+docker compose config --quiet
+docker compose run --rm --no-deps app python -c 'from app import create_app; create_app(); print("Configuration OK")'
 ```
 
-默认仅监听 `127.0.0.1:8080`。将 `Caddyfile.example` 的域名替换为真实域名并加入
-服务器的 Caddy 配置，配置 DNS 和 HTTPS 所需端口。`clash-config.service.example`
-提供 systemd 模板：创建专用 `clash-config` 系统账号，按实际 checkout 位置调整
-路径，确保账号有读取权限后安装并启用；不要使用个人 home 目录中的 checkout，
-模板启用了 `ProtectHome=true`。本仓库的平台安装器不会自动部署此服务。
+配置检查只读取本地文件，不访问上游。配置文件以只读方式挂载，镜像中不包含
+订阅地址、节点凭证或设备令牌；`.dockerignore` 只允许构建所需代码与依赖文件。
+应用根文件系统只读，Gunicorn 临时文件放在 `/tmp` tmpfs。
+
+先向提供商申请允许服务器访问订阅，再将域名 A/AAAA 记录指向服务器，放行
+TCP 80/443（UDP 443 用于 HTTP/3），确保这些端口未被其他服务占用：
+
+```sh
+docker compose up -d
+docker compose ps
+docker compose logs --tail=50 app caddy
+```
+
+Caddy 自动管理 HTTPS，证书与配置保存在命名卷中；正常升级或停止使用
+`docker compose down`，不要加 `-v`，以保留证书。健康检查只请求应用 `/` 并验证
+404，不使用订阅令牌、不访问提供商；健康状态不代表上游已获授权或可用。
+
+若已在宿主机部署上一版服务，先停用旧 Gunicorn/systemd 服务，并迁移原有
+Caddy 配置或停止旧反向代理，避免占用 80/443；确认新服务可用后移除旧的
+systemd 单元。仓库不再提供 systemd 部署模板，平台安装器也不会自动部署此服务。
 
 客户端导入地址：
 
@@ -59,15 +87,18 @@ https://config.example.com/sub/<该设备的令牌>/config.yaml
 路由器使用 `router` 令牌订阅主配置，再按 `Nikki-Mixin.yaml` 文件头说明导入
 Mixin 并配置 Nikki。主配置单独使用时仍启用 TUN，不能跳过路由器 Mixin 步骤。
 
-Gunicorn 与示例 Caddy 均不启用访问日志，避免记录令牌；如已有全局代理日志，
+Gunicorn 与 Caddy 均不启用访问日志，避免记录令牌；如已有全局代理日志，
 也应隐藏订阅路径。响应带 `Cache-Control: private, no-store`，不应由 CDN 公共
-缓存。设备令牌能读取完整节点凭证；删除或替换令牌后重启服务可撤销下载权限，
+缓存。设备令牌能读取完整节点凭证；删除或替换令牌后重建应用容器可撤销下载权限，
 但不会撤销设备此前已经下载的节点凭证。
 
 ## 更新、缓存与故障
 
-- Common 每次生成时重新读取；更新文件后下次订阅请求生效。请先验证再原子替换。
-  Mixin 仍需在路由器手动更新。修改设备令牌、上游地址或其他服务设置后需重启。
+- 更新 Common 或 settings 后执行 `docker compose up -d --force-recreate app`。
+  单文件 bind mount 可能仍指向原子替换前的 inode，必须重建容器而不只是 restart。
+  Common 每次生成时读取挂载文件；Mixin 仍需在路由器手动更新。
+- 更新服务代码或依赖后执行 `docker compose up -d --build`；更新 `.env` 后执行
+  `docker compose up -d` 使域名环境变量生效。
 - 上游按请求触发刷新，共享内存缓存默认 300 秒；默认仅一个 Gunicorn worker，
   四个线程共享缓存和锁，避免并发重复拉取。没有定时后台下载任务。
 - 403、超时、无效 YAML 等失败后至少等待 60 秒再尝试。首次失败返回 503；
@@ -83,10 +114,13 @@ Gunicorn 与示例 Caddy 均不启用访问日志，避免记录令牌；如已�
 ## 离线验证
 
 ```sh
-uv run --locked python -m unittest discover -s . -p 'test_*.py' -v
+docker build --target test -t clash-config-test:local .
+docker run --rm --network none --read-only --tmpfs /tmp \
+  --mount "type=bind,src=$(cd .. && pwd)/MySubscription-Common.yaml,dst=/app/MySubscription-Common.yaml,readonly" \
+  clash-config-test:local
 ```
 
-测试覆盖设备分流、移动端字节透传、Common 策略保留、Mixin 分离、鉴权、
+首次构建需要下载镜像和依赖；测试容器禁用网络。测试覆盖设备分流、移动端字节透传、Common 策略保留、Mixin 分离、鉴权、
 缓存刷新、拒绝访问与过期回退。不会请求真实订阅，也不需要提供商授权。
 
 Mihomo inline provider 的结构参见

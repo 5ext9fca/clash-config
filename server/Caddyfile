@@ -1,0 +1,4 @@
+{$CONFIG_DOMAIN} {
+	# No access log: subscription URLs contain device credentials.
+	reverse_proxy app:8080
+}
