@@ -40,4 +40,4 @@ services:
 networks:
   caddy:
     external: true
-    name: ${CADDY_NETWORK:-mycollab-prod_default}
+    name: ${CADDY_NETWORK:-caddy-public}
