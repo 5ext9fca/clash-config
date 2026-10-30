@@ -1,0 +1,23 @@
+[Unit]
+Description=Device-specific Clash configuration service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=clash-config
+Group=clash-config
+# Adjust these paths to the server checkout location.
+WorkingDirectory=/opt/dotfiles/clash/server
+Environment=CLASH_SETTINGS=/opt/dotfiles/clash/server/settings.yaml
+ExecStart=/opt/dotfiles/clash/server/.venv/bin/gunicorn --config gunicorn.conf.py app:create_app()
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
