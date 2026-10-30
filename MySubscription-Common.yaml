@@ -57,16 +57,18 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   respect-rules: false
+  use-hosts: true
 
   # Bootstrap DNS for resolvers; does not point back to the router's AGH.
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
+    - 114.114.114.114
 
-  # Foreign/default resolution uses the currently selected PROXY group.
+  # Default resolvers supplied by the Airport Clash subscription.
   nameserver:
-    - 'https://1.1.1.1/dns-query#PROXY'
-    - 'https://8.8.8.8/dns-query#PROXY'
+    - 'https://zone.rlose.com:39933/api-query'
+    - 'https://radar.rlose.com/api-query'
 
   # Node hostnames must resolve without depending on the proxy itself.
   proxy-server-nameserver:
@@ -79,6 +81,7 @@ dns:
     - 'https://doh.pub/dns-query#DIRECT'
   direct-nameserver-follow-policy: true
 
+  # Merge subscription exclusions with local and campus exceptions.
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -90,6 +93,86 @@ dns:
     - 'time.*.gov'
     - 'time.*.edu.cn'
     - 'time.*.apple.com'
+    - '*.linksys.com'
+    - '*.linksyssmartwifi.com'
+    - 'swscan.apple.com'
+    - 'mesu.apple.com'
+    - 'swquery.apple.com'
+    - 'swdownload.apple.com'
+    - 'swcdn.apple.com'
+    - 'swdist.apple.com'
+    - '*.msftconnecttest.com'
+    - '*.msftncsi.com'
+    - 'xbox.*.microsoft.com'
+    - 'xbox.*.*.microsoft.com'
+    - '+.xboxlive.com'
+    - 'time1.*.com'
+    - 'time2.*.com'
+    - 'time3.*.com'
+    - 'time4.*.com'
+    - 'time5.*.com'
+    - 'time6.*.com'
+    - 'time7.*.com'
+    - 'ntp.*.com'
+    - 'ntp1.*.com'
+    - 'ntp2.*.com'
+    - 'ntp3.*.com'
+    - 'ntp4.*.com'
+    - 'ntp5.*.com'
+    - 'ntp6.*.com'
+    - 'ntp7.*.com'
+    - '*.time.edu.cn'
+    - '*.ntp.org.cn'
+    - '+.pool.ntp.org'
+    - 'time1.cloud.tencent.com'
+    - 'lens.l.google.com'
+    - '+.music.163.com'
+    - '+.126.net'
+    - 'musicapi.taihe.com'
+    - 'music.taihe.com'
+    - 'songsearch.kugou.com'
+    - 'trackercdn.kugou.com'
+    - '*.kuwo.cn'
+    - 'api-jooxtt.sanook.com'
+    - 'api.joox.com'
+    - 'joox.com'
+    - '+.y.qq.com'
+    - '+.music.tc.qq.com'
+    - 'aqqmusic.tc.qq.com'
+    - '+.stream.qqmusic.qq.com'
+    - '+.xiami.com'
+    - '+.music.migu.cn'
+    - '+.stun.*.*'
+    - '+.stun.*.*.*'
+    - '+.stun.*.*.*.*'
+    - '+.stun.*.*.*.*.*'
+    - '+.srv.nintendo.net'
+    - '*.n.n.srv.nintendo.net'
+    - '+.stun.playstation.net'
+    - '+.battlenet.com.cn'
+    - '+.wotgame.cn'
+    - '+.wggames.cn'
+    - '+.wowsgame.cn'
+    - '+.wargaming.net'
+    - '*.square-enix.com'
+    - '*.finalfantasyxiv.com'
+    - '*.ffxiv.com'
+    - '*.ff14.sdo.com'
+    - 'ff.dorado.sdo.com'
+    - 'localhost.sec.qq.com'
+    - 'proxy.golang.org'
+    - '+.qq.com'
+    - '+.baidu.com'
+    - '+.163.com'
+    - '+.taobao.com'
+    - '+.jd.com'
+    - '+.tmall.com'
+    - '*.mcdn.bilivideo.cn'
+    - '+.nvidia.com'
+    - '+.nvidia.cn'
+    - '+.nvgs.nvidia.com'
+    - '+.nvgs.nvidia.cn'
+    - 'shark007.net'
 
   nameserver-policy:
     # Bootstrap the DIRECT Airport subscription without relying on proxy DNS.
