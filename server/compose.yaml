@@ -1,0 +1,43 @@
+name: clash-config
+
+services:
+  app:
+    build:
+      context: .
+      target: runtime
+    restart: unless-stopped
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    volumes:
+      - type: bind
+        source: ./settings.yaml
+        target: /config/server/settings.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../MySubscription-Common.yaml
+        target: /config/MySubscription-Common.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      # A 404 proves the HTTP worker is ready without fetching any subscription.
+      test: [CMD, python, -c, "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=3); c.request('GET','/'); assert c.getresponse().status == 404"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+    networks:
+      caddy:
+        aliases:
+          - clash-subscription
+
+networks:
+  caddy:
+    external: true
+    name: ${CADDY_NETWORK:-caddy-public}

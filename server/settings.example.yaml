@@ -1,0 +1,21 @@
+# Paths are relative to this file. Restart the service after changing settings.
+common: ../MySubscription-Common.yaml
+# Leave empty to use Common's Airport URL. The provider must authorize this
+# server before access; a denied request is never bypassed or converted.
+upstream_url: ""
+# Explicit format negotiation; client User-Agent is never forwarded.
+upstream_user_agent: clash.meta
+cache_ttl: 300
+max_stale: 86400
+retry_interval: 60
+timeout: 15
+devices:
+  - name: desktop
+    type: desktop
+    token: REPLACE_WITH_A_RANDOM_DESKTOP_TOKEN
+  - name: phone
+    type: mobile
+    token: REPLACE_WITH_A_RANDOM_MOBILE_TOKEN
+  - name: router
+    type: router
+    token: REPLACE_WITH_A_RANDOM_ROUTER_TOKEN

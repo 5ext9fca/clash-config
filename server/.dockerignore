@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!pyproject.toml
+!uv.lock
+!app.py
+!gunicorn.conf.py
+!test_app.py
