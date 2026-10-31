@@ -168,6 +168,11 @@ def load_settings(path):
     settings["upstream_url"] = url
     if settings.get("upstream_user_agent") in (None, "", "clash.meta", "clash-verge/v2.5.8"):
         settings["upstream_user_agent"] = DEFAULT_USER_AGENT
+    settings.setdefault("upstream_flag", DEFAULT_FLAG)
+    for key in ("upstream_user_agent", "upstream_flag"):
+        value = settings[key]
+        if not isinstance(value, str) or not value or not value.isascii() or any(ord(c) < 32 or ord(c) == 127 for c in value):
+            raise ValueError(f"{key} must be a non-empty ASCII header value")
     for key, default in (("cache_ttl", 300), ("max_stale", 86400), ("retry_interval", 60), ("timeout", 15)):
         settings.setdefault(key, default)
         if type(settings[key]) is not int or settings[key] <= 0:
@@ -182,6 +187,10 @@ def load_settings(path):
             raise ValueError("Each device needs a random URL-safe token of 32–128 characters")
         if token in tokens or device.get("type") not in {"desktop", "mobile", "router"}:
             raise ValueError("Duplicate token or invalid device type")
+        for key in ("forward_user_agent", "forward_flag"):
+            device.setdefault(key, device["type"] != "router")
+            if type(device[key]) is not bool:
+                raise ValueError(f"{key} must be a boolean")
         tokens.add(token)
     return settings
 
@@ -196,21 +205,27 @@ class Application:
         headers = [("Cache-Control", "private, no-store"), ("X-Content-Type-Options", "nosniff")]
         status, body = "404 Not Found", b"Not found\n"
         match = re.fullmatch(r"/sub/([A-Za-z0-9_-]{32,128})/config\.yaml", environ.get("PATH_INFO", ""))
+        matched_device = None
         device_type = None
         if match:
             for device in self.settings["devices"]:
                 if hmac.compare_digest(match[1], device["token"]):
                     device_type = device["type"]
+                    matched_device = device
         if device_type:
             if method not in {"GET", "HEAD"}:
                 status, body = "405 Method Not Allowed", b"Method not allowed\n"
                 headers.append(("Allow", "GET, HEAD"))
             else:
                 try:
-                    user_agent = environ.get("HTTP_USER_AGENT") or self.settings["upstream_user_agent"]
-                    (raw, upstream_headers, profile), stale = self.cache.get(
-                        user_agent, environ.get("HTTP_FLAG") or DEFAULT_FLAG
-                    )
+                    forward_default = device_type != "router"
+                    user_agent = self.settings["upstream_user_agent"]
+                    flag = self.settings.get("upstream_flag", DEFAULT_FLAG)
+                    if matched_device.get("forward_user_agent", forward_default):
+                        user_agent = environ.get("HTTP_USER_AGENT") or user_agent
+                    if matched_device.get("forward_flag", forward_default):
+                        flag = environ.get("HTTP_FLAG") or flag
+                    (raw, upstream_headers, profile), stale = self.cache.get(user_agent, flag)
                     if device_type == "mobile":
                         body = raw
                     else:

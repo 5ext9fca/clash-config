@@ -139,7 +139,61 @@ class ServiceTests(unittest.TestCase):
         self.app.cache.fetch = fetch_upstream
         for kind, ua in (("m", "Client/mobile"), ("d", "Client/desktop"), ("r", "Client/router"), ("m", "")):
             self.assertEqual(self.request(kind, user_agent=ua)[0], "200 OK")
-            self.assertEqual(open_mock.call_args.args[0].get_header("User-agent"), ua or DEFAULT_USER_AGENT)
+            self.assertEqual(open_mock.call_args.args[0].get_header("User-agent"), (ua if kind != "r" else None) or DEFAULT_USER_AGENT)
+
+    def test_header_forwarding_switches_are_independent(self):
+        self.settings["upstream_user_agent"] = "ConfiguredUA"
+        self.settings["upstream_flag"] = "configured-flag"
+        seen = []
+        def fetch(url, ua, timeout, flag):
+            seen.append((ua, flag))
+            return UPSTREAM, {}
+        self.app.cache.fetch = fetch
+        router = self.settings["devices"][2]
+        for forward_ua, forward_flag in ((False, False), (True, False), (False, True), (True, True)):
+            router.update(forward_user_agent=forward_ua, forward_flag=forward_flag)
+            self.assertEqual(self.request("r", user_agent="ClientUA", flag="client-flag")[0], "200 OK")
+            self.assertEqual(seen[-1], (
+                "ClientUA" if forward_ua else "ConfiguredUA",
+                "client-flag" if forward_flag else "configured-flag",
+            ))
+        self.assertEqual(len(seen), 4)
+        self.assertEqual(self.request("r", user_agent="", flag="")[0], "200 OK")
+        self.assertEqual(len(seen), 4)  # Empty headers reuse the configured-default cache.
+
+    def test_router_ignores_headers_by_default(self):
+        self.settings["upstream_user_agent"] = "ConfiguredUA"
+        self.settings["upstream_flag"] = "configured-flag"
+        seen = []
+        def fetch(url, ua, timeout, flag):
+            seen.append((ua, flag))
+            return UPSTREAM, {}
+        self.app.cache.fetch = fetch
+        for ua, flag in (("RouterA", "one"), ("RouterB", "two")):
+            self.assertEqual(self.request("r", user_agent=ua, flag=flag)[0], "200 OK")
+        self.assertEqual(seen, [("ConfiguredUA", "configured-flag")])
+
+    def test_settings_header_defaults_and_switch_validation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.yaml"
+            settings = {**copy.deepcopy(self.settings), "common": str(COMMON)}
+            path.write_text(yaml.safe_dump(settings))
+            loaded = load_settings(path)
+            self.assertEqual(loaded["upstream_flag"], "anytls")
+            for device in loaded["devices"]:
+                self.assertEqual(device["forward_user_agent"], device["type"] != "router")
+                self.assertEqual(device["forward_flag"], device["type"] != "router")
+            for key in ("forward_user_agent", "forward_flag"):
+                changed = copy.deepcopy(settings)
+                changed["devices"][2][key] = "false"
+                path.write_text(yaml.safe_dump(changed))
+                with self.assertRaises(ValueError):
+                    load_settings(path)
+            settings.update(upstream_user_agent="ConfiguredUA", upstream_flag="custom-flag")
+            path.write_text(yaml.safe_dump(settings))
+            loaded = load_settings(path)
+            self.assertEqual(loaded["upstream_user_agent"], "ConfiguredUA")
+            self.assertEqual(loaded["upstream_flag"], "custom-flag")
 
     @patch("app.urlopen")
     def test_flag_defaults_and_passthrough_have_separate_caches(self, open_mock):

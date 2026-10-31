@@ -22,11 +22,11 @@ Common 中的 `rule-providers` 下载。节点改为随完整订阅更新，客�
 
 **现有订阅链接默认拒绝访问，正式启用前必须手动向提供商申请允许服务器访问。**
 向提供商确认出口 IP、允许的请求方式及返回 Clash YAML 所需的 User-Agent。
-服务只向配置好的 HTTPS 地址发起普通请求，不绕过访问限制，透传设备请求中非空的
+服务只向配置好的 HTTPS 地址发起普通请求，不绕过访问限制，按设备配置决定是否透传
 User-Agent 和 flag，不接受客户端传入任意上游 URL。测试全部使用模拟数据。
 
 `upstream_url` 留空时读取 Subscription-Mixin 的 Airport URL；也可以指定提供商批准的
-专用地址。请求包含非空 User-Agent 时原样透传；缺失或为空时使用
+专用地址。设备开启 UA 透传且请求包含非空 User-Agent 时原样透传；否则使用
 `upstream_user_agent`，默认 `FlClash/v0.9.2 clash-verge Platform/linux`，仅用于请求 YAML 格式，
 不能代替提供商授权。旧配置的 `clash.meta`、`clash-verge/v2.5.8`、空值或未配置会自动使用该默认值；
 其他显式自定义 UA 仍保留。直接导入订阅 Mixin 时，其 provider 请求头也使用
@@ -34,8 +34,19 @@ User-Agent 和 flag，不接受客户端传入任意上游 URL。测试全部使
 其中 `clash-verge` 是官方兼容标识，平台按 Linux 服务环境填写。上游必须返回带 `proxies`、`proxy-groups`、`rules` 的完整
 配置；HTML、空节点、仅节点订阅和 Base64 节点列表会被拒绝。
 
-请求头 `flag` 默认发送 `anytls`；客户端传入非空 `flag` 时原样透传。
-直接使用 Subscription-Mixin 的 provider 同样发送 `flag: anytls`。
+`upstream_user_agent` 和 `upstream_flag` 分别配置默认 UA 和 flag；后者默认为
+`anytls`。每个 `devices` 条目可独立设置两个布尔开关：
+
+| 配置项 | desktop/mobile 默认 | router 默认 |
+| --- | --- | --- |
+| `forward_user_agent` | `true` | `false` |
+| `forward_flag` | `true` | `false` |
+
+开启对应开关且客户端请求头非空时原样透传，否则使用该请求头的服务端默认值。
+旧 settings 未填写开关时也按上表生效，router 不会透传 UA 或 flag。
+可以为单个设备显式覆盖开关，两个开关互不影响。
+修改 settings 后需重建服务容器。直接使用 Subscription-Mixin 的 provider
+仍使用该文件内的固定请求头，不读取 server settings。
 
 ## 部署
 

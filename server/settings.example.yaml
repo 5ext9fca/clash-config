@@ -6,8 +6,9 @@ router_mixin: ../Nikki-Mixin.yaml
 # Leave empty to use Subscription-Mixin's Airport URL. The provider must authorize this
 # server before access; a denied request is never bypassed or converted.
 upstream_url: ""
-# Fallback only: a non-empty client User-Agent is forwarded unchanged.
+# Defaults used when forwarding is disabled or the client header is empty.
 upstream_user_agent: FlClash/v0.9.2 clash-verge Platform/linux
+upstream_flag: anytls
 cache_ttl: 300
 max_stale: 86400
 retry_interval: 60
@@ -15,10 +16,16 @@ timeout: 15
 devices:
   - name: desktop
     type: desktop
+    forward_user_agent: true
+    forward_flag: true
     token: REPLACE_WITH_A_RANDOM_DESKTOP_TOKEN
   - name: phone
     type: mobile
+    forward_user_agent: true
+    forward_flag: true
     token: REPLACE_WITH_A_RANDOM_MOBILE_TOKEN
   - name: router
     type: router
+    forward_user_agent: false
+    forward_flag: false
     token: REPLACE_WITH_A_RANDOM_ROUTER_TOKEN
