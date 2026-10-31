@@ -41,9 +41,29 @@ def parse_profile(body):
     return profile
 
 
-def render_common(common, upstream):
-    """Keep Common's policies; replace only Airport's remote node source."""
-    result = copy.deepcopy(common)
+def load_mixin(path):
+    mixin = yaml.safe_load(Path(path).read_bytes())
+    if not isinstance(mixin, dict):
+        raise ValueError("Expected a YAML mixin mapping")
+    return mixin
+
+
+def merge_profile(base, overlay):
+    """Recursively merge mappings; replace lists and scalar values."""
+    result = copy.deepcopy(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(result.get(key), dict):
+            result[key] = merge_profile(result[key], value)
+        else:
+            result[key] = copy.deepcopy(value)
+    return result
+
+
+def render_common(common, upstream, subscription, router=None):
+    """Compose local policy and mixins, consuming only upstream nodes."""
+    result = merge_profile(common, subscription)
+    if router is not None:
+        result = merge_profile(result, router)
     provider = result["proxy-providers"]["Airport"]
     for key in ("url", "path", "interval", "proxy", "header", "size-limit"):
         provider.pop(key, None)
@@ -111,8 +131,13 @@ def load_settings(path):
     settings = yaml.safe_load(path.read_bytes())
     common_path = (path.parent / settings.get("common", "../MySubscription-Common.yaml")).resolve()
     settings["common"] = common_path
-    common = parse_profile(common_path.read_bytes())
-    url = settings.get("upstream_url") or common["proxy-providers"]["Airport"]["url"]
+    parse_profile(common_path.read_bytes())
+    for key, filename in (("subscription_mixin", "Subscription-Mixin.yaml"),
+                          ("router_mixin", "Nikki-Mixin.yaml")):
+        settings[key] = (path.parent / settings.get(key, f"../{filename}")).resolve()
+        load_mixin(settings[key])
+    subscription = load_mixin(settings["subscription_mixin"])
+    url = settings.get("upstream_url") or subscription["proxy-providers"]["Airport"]["url"]
     parsed_url = urlsplit(url)
     if parsed_url.scheme != "https" or not parsed_url.hostname or parsed_url.username:
         raise ValueError("upstream_url must be an HTTPS URL without userinfo")
@@ -162,7 +187,9 @@ class Application:
                         body = raw
                     else:
                         common = parse_profile(self.settings["common"].read_bytes())
-                        body = render_common(common, profile)
+                        subscription = load_mixin(self.settings["subscription_mixin"])
+                        router = load_mixin(self.settings["router_mixin"]) if device_type == "router" else None
+                        body = render_common(common, profile, subscription, router)
                     status = "200 OK"
                     headers.extend(upstream_headers.items())
                     headers.extend([

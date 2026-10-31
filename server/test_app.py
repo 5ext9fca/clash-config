@@ -8,9 +8,11 @@ from unittest.mock import patch
 
 import yaml
 
-from app import Application, fetch_upstream, load_settings, parse_profile, render_common
+from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile
 
 COMMON = Path(__file__).resolve().parent.parent / "MySubscription-Common.yaml"
+SUBSCRIPTION = COMMON.with_name("Subscription-Mixin.yaml")
+ROUTER = COMMON.with_name("Nikki-Mixin.yaml")
 UPSTREAM = b"# Original provider profile\nproxies:\n- {name: Airport-test, type: ss, server: example.com, port: 443, cipher: aes-128-gcm, password: test}\nproxy-groups:\n- {name: Default, type: select, proxies: [Airport-test]}\nrules: ['MATCH,Default']\n"
 
 
@@ -20,6 +22,7 @@ class ServiceTests(unittest.TestCase):
         self.calls = 0
         self.denied = False
         self.settings = {
+            "subscription_mixin": str(SUBSCRIPTION), "router_mixin": str(ROUTER),
             "common": COMMON, "upstream_url": "https://provider.invalid/sub",
             "upstream_user_agent": "clash.meta", "timeout": 15,
             "cache_ttl": 300, "max_stale": 600, "retry_interval": 60,
@@ -52,7 +55,7 @@ class ServiceTests(unittest.TestCase):
         status, _, body = self.request()
         self.assertEqual(status, "200 OK")
         actual = yaml.safe_load(body)
-        common = yaml.safe_load(COMMON.read_bytes())
+        common = merge_profile(yaml.safe_load(COMMON.read_bytes()), load_mixin(SUBSCRIPTION))
         for key in ("rules", "proxy-groups", "proxies", "dns", "tun", "rule-providers"):
             self.assertEqual(actual[key], common[key])
         provider = actual["proxy-providers"]["Airport"]
@@ -67,9 +70,37 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(body, UPSTREAM)
         self.assertIn("subscription-userinfo", headers)
 
-    def test_router_has_common_without_mixin(self):
-        self.assertEqual(self.request("d")[2], self.request("r")[2])
-        self.assertTrue(yaml.safe_load(self.request("r")[2])["tun"]["enable"])
+    def test_router_automatically_merges_nikki(self):
+        desktop = yaml.safe_load(self.request("d")[2])
+        status, _, body = self.request("r")
+        self.assertEqual(status, "200 OK")
+        router = yaml.safe_load(body)
+        self.assertEqual(router, merge_profile(desktop, load_mixin(ROUTER)))
+        self.assertFalse(router["tun"]["enable"])
+        self.assertEqual(router["tun"]["dns-hijack"], [])
+        self.assertEqual(router["dns"]["enhanced-mode"], "redir-host")
+        self.assertEqual(router["dns"]["nameserver-policy"], desktop["dns"]["nameserver-policy"])
+        self.assertEqual(router["tproxy-port"], 7893)
+        self.assertTrue(desktop["tun"]["enable"])
+        self.assertEqual(desktop["dns"]["enhanced-mode"], "fake-ip")
+        for key in ("rules", "proxies", "proxy-groups", "proxy-providers"):
+            self.assertEqual(router[key], desktop[key])
+
+    def test_merge_replaces_lists_and_does_not_mutate_inputs(self):
+        base = {"dns": {"keep": True, "list": [1, 2]}, "tun": True}
+        overlay = {"dns": {"list": []}, "tun": False}
+        original = copy.deepcopy((base, overlay))
+        self.assertEqual(merge_profile(base, overlay), {"dns": {"keep": True, "list": []}, "tun": False})
+        self.assertEqual((base, overlay), original)
+
+    def test_broken_router_mixin_does_not_affect_desktop_or_mobile(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "router.yaml"
+            path.write_text("[]")
+            self.settings["router_mixin"] = path
+            self.assertEqual(self.request("r")[0], "503 Service Unavailable")
+            self.assertEqual(self.request("d")[0], "200 OK")
+            self.assertEqual(self.request("m")[2], UPSTREAM)
 
     def test_invalid_token_path_and_method_do_not_fetch(self):
         for path in ("/", "/sub/bad/config.yaml", f"/sub/{'z' * 40}/config.yaml", "/../settings.yaml"):
@@ -126,7 +157,7 @@ class ServiceTests(unittest.TestCase):
     def test_template_is_not_mutated(self):
         common = parse_profile(COMMON.read_bytes())
         original = copy.deepcopy(common)
-        render_common(common, parse_profile(UPSTREAM))
+        render_common(common, parse_profile(UPSTREAM), load_mixin(SUBSCRIPTION), load_mixin(ROUTER))
         self.assertEqual(common, original)
 
     def test_settings_reject_placeholder_duplicate_and_http(self):
@@ -136,6 +167,9 @@ class ServiceTests(unittest.TestCase):
             settings["common"] = str(COMMON)
             path.write_text(yaml.safe_dump(settings))
             self.assertEqual(load_settings(path)["common"], COMMON)
+            settings["upstream_url"] = ""
+            path.write_text(yaml.safe_dump(settings))
+            self.assertEqual(load_settings(path)["upstream_url"], load_mixin(SUBSCRIPTION)["proxy-providers"]["Airport"]["url"])
             for key, value in (("upstream_url", "http://provider.invalid/sub"), ("cache_ttl", 0)):
                 changed = {**settings, key: value}
                 path.write_text(yaml.safe_dump(changed))

@@ -2,11 +2,15 @@
 
 为每台设备分配独立订阅令牌，通过 HTTPS 拉取完整 YAML：
 
-- `desktop`：读取 `../MySubscription-Common.yaml`，将上游 `proxies` 嵌入
+- `desktop`：读取 `../MySubscription-Common.yaml` 并深度合并
+  `../Subscription-Mixin.yaml`，将上游 `proxies` 嵌入
   `Airport` inline provider。保留私有节点、健康检查、策略组、DNS 和规则顺序。
 - `mobile`：返回订阅服务原始 YAML 字节，不应用 Common、不添加私有节点。
-- `router`：返回与桌面端相同的主配置；在 Nikki 中单独手动导入
-  `../Nikki-Mixin.yaml`，服务不合并 Mixin。
+- `router`：在桌面端配置基础上自动深度合并 `../Nikki-Mixin.yaml`，
+  下发已关闭 TUN、启用 TPROXY 和 redir-host 的完整配置。
+
+Mixin 合并时递归保留映射中的其他键，列表和标量整体替换；空列表会清空
+原列表。订阅 Mixin 保持独立，Common 不包含机场专属设置。
 
 设备类型由服务端配置绑定，不推测客户端 User-Agent。移动端需要支持提供商
 返回的 Clash YAML 格式；服务不转换为其他客户端格式。规则集仍由客户端按
@@ -20,7 +24,7 @@ Common 中的 `rule-providers` 下载。节点改为随完整订阅更新，客�
 服务只向配置好的 HTTPS 地址发起普通请求，不绕过访问限制，不转发设备的
 User-Agent，也不接受客户端传入任意上游 URL。测试全部使用模拟数据。
 
-`upstream_url` 留空时读取 Common 的 Airport URL；也可以指定提供商批准的
+`upstream_url` 留空时读取 Subscription-Mixin 的 Airport URL；也可以指定提供商批准的
 专用地址。`upstream_user_agent` 默认 `clash.meta`，仅用于请求 YAML 格式，
 不能代替提供商授权。上游必须返回带 `proxies`、`proxy-groups`、`rules` 的完整
 配置；HTML、空节点、仅节点订阅和 Base64 节点列表会被拒绝。
@@ -44,15 +48,15 @@ docker compose build app
 docker compose run --rm --no-deps app python -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-确认 `.env` 中的网络名，并为 `settings.yaml` 中每台设备填写独立令牌；占位令牌会被拒绝。Common 路径保留默认相对路径，Compose 会将
-两个文件挂载到匹配的容器路径。不要填宿主机绝对路径。
+确认 `.env` 中的网络名，并为 `settings.yaml` 中每台设备填写独立令牌；占位令牌会被拒绝。Common、subscription_mixin 和 router_mixin 路径保留默认相对路径，Compose 会将
+settings 和三个 YAML 文件挂载到匹配的容器路径。不要填宿主机绝对路径。
 
 应用固定以 UID/GID `10001:10001` 运行；在 Linux 服务器上设置读取权限：
 
 ```sh
 sudo chown 10001:10001 settings.yaml
 sudo chmod 600 settings.yaml
-# Common 默认应可读；若权限收紧，也需允许容器 UID 10001 读取。
+# Common 和两个 Mixin 默认应可读；若权限收紧，也需允许容器 UID 10001 读取。
 docker compose config --quiet
 docker compose run --rm --no-deps app python -c 'from app import create_app; create_app(); print("Configuration OK")'
 ```
@@ -89,8 +93,10 @@ docker compose logs --tail=50 app
 https://<公网IPv4>/sub/<该设备的令牌>/config.yaml
 ```
 
-路由器使用 `router` 令牌订阅主配置，再按 `Nikki-Mixin.yaml` 文件头说明导入
-Mixin 并配置 Nikki。主配置单独使用时仍启用 TUN，不能跳过路由器 Mixin 步骤。
+路由器使用 `router` 令牌即可订阅合并后的完整配置，无需在 Nikki 再导入 Mixin。
+Nikki 中关闭重复的 Mixin File Content，并将对应 GUI 覆写项设为 Unmodified，
+避免覆盖服务端生成值；仍需启用路由器/LAN 代理、设置访问控制，并关闭 IPv4/IPv6
+DNS 劫持。
 
 Gunicorn 与公共 Caddy 默认配置均不启用访问日志，避免记录令牌；如已有全局代理日志，
 也应隐藏订阅路径。响应带 `Cache-Control: private, no-store`，不应由 CDN 公共
@@ -102,9 +108,9 @@ MyCollab 的停止和重建不影响订阅入口。
 
 ## 更新、缓存与故障
 
-- 更新 Common 或 settings 后执行 `docker compose up -d --force-recreate app`。
+- 更新 Common、任一 Mixin 或 settings 后执行 `docker compose up -d --force-recreate app`。
   单文件 bind mount 可能仍指向原子替换前的 inode，必须重建容器而不只是 restart。
-  Common 每次生成时读取挂载文件；Mixin 仍需在路由器手动更新。
+  Common 和订阅 Mixin 每次生成时读取挂载文件；router 还会读取 Nikki Mixin。
 - 更新服务代码或依赖后执行 `docker compose up -d --build`；更新 `.env` 后执行
   `docker compose up -d` 使网络设置生效。公共入口的更新在 MyCaddy 中单独执行。
 - 上游按请求触发刷新，共享内存缓存默认 300 秒；默认仅一个 Gunicorn worker，
@@ -113,7 +119,7 @@ MyCollab 的停止和重建不影响订阅入口。
   有缓存时可在缓存过期后最多继续使用 86400 秒，并返回
   `X-Subscription-Cache: stale`；超过时限返回 503，不发布错误页或空配置。
 - 缓存不持久化，重启后需要成功拉取一次。服务故障时客户端应保留上次成功配置。
-  Common 本身损坏会返回 503，不自动回滚；用 Git 恢复上一版本。
+  当前设备所需的 Common 或 Mixin 损坏会返回 503，不自动回滚；用 Git 恢复上一版本。
 - 移动端保留上游 `subscription-userinfo` 流量信息头，桌面端/路由器也携带同一
   订阅额度信息。其他上游响应头不会转发。
 - 服务检查 YAML 的基本结构，不替代 Mihomo 内核校验。上线前应使用目标版本
@@ -125,10 +131,12 @@ MyCollab 的停止和重建不影响订阅入口。
 docker build --target test -t clash-config-test:local .
 docker run --rm --network none --read-only --tmpfs /tmp \
   --mount "type=bind,src=$(cd .. && pwd)/MySubscription-Common.yaml,dst=/app/MySubscription-Common.yaml,readonly" \
+  --mount "type=bind,src=$(cd .. && pwd)/Subscription-Mixin.yaml,dst=/app/Subscription-Mixin.yaml,readonly" \
+  --mount "type=bind,src=$(cd .. && pwd)/Nikki-Mixin.yaml,dst=/app/Nikki-Mixin.yaml,readonly" \
   clash-config-test:local
 ```
 
-首次构建需要下载镜像和依赖；测试容器禁用网络。测试覆盖设备分流、移动端字节透传、Common 策略保留、Mixin 分离、鉴权、
+首次构建需要下载镜像和依赖；测试容器禁用网络。测试覆盖设备分流、移动端字节透传、Common 策略保留、订阅 Mixin 合并、router 自动覆写、桌面端隔离、鉴权、
 缓存刷新、拒绝访问与过期回退。不会请求真实订阅，也不需要提供商授权。
 
 Mihomo inline provider 的结构参见

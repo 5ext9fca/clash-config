@@ -24,6 +24,18 @@ services:
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ../Subscription-Mixin.yaml
+        target: /config/Subscription-Mixin.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../Nikki-Mixin.yaml
+        target: /config/Nikki-Mixin.yaml
+        read_only: true
+        bind:
+          create_host_path: false
     healthcheck:
       # A 404 proves the HTTP worker is ready without fetching any subscription.
       test: [CMD, python, -c, "import http.client; c=http.client.HTTPConnection('127.0.0.1',8080,timeout=3); c.request('GET','/'); assert c.getresponse().status == 404"]

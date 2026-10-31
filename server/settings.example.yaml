@@ -1,6 +1,8 @@
 # Paths are relative to this file. Restart the service after changing settings.
 common: ../MySubscription-Common.yaml
-# Leave empty to use Common's Airport URL. The provider must authorize this
+subscription_mixin: ../Subscription-Mixin.yaml
+router_mixin: ../Nikki-Mixin.yaml
+# Leave empty to use Subscription-Mixin's Airport URL. The provider must authorize this
 # server before access; a denied request is never bypassed or converted.
 upstream_url: ""
 # Explicit format negotiation; client User-Agent is never forwarded.

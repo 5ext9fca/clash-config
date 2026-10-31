@@ -3,7 +3,9 @@
 # DNS: clients -> AGH:53 -> Mihomo 127.0.0.1:1053.
 # In Nikki proxy settings, disable BOTH IPv4 and IPv6 DNS hijacking.
 # Enable router/LAN proxy and configure matching access-control rules.
-# Enable Mixin File Content; set matching GUI mixin fields to Unmodified.
+# Server router subscriptions already include this mixin: disable duplicate
+# Mixin File Content and set matching GUI mixin fields to Unmodified.
+# For manual Common imports only, enable Mixin File Content with this file.
 # Turn off list/map overwrite switches for DNS and sniffer settings.
 # GUI options are applied AFTER this file, and can overwrite its values.
 # The masked API secret in the screenshot cannot be recovered.
