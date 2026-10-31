@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import yaml
 
-from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common
+from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common, DEFAULT_USER_AGENT
 
 COMMON = Path(__file__).resolve().parent.parent / "MySubscription-Common.yaml"
 PRIVATE = COMMON.with_name("Private-Nodes-Mixin.yaml")
@@ -26,7 +26,7 @@ class ServiceTests(unittest.TestCase):
             "private_nodes_mixin": str(PRIVATE),
             "subscription_mixin": str(SUBSCRIPTION), "router_mixin": str(ROUTER),
             "common": COMMON, "upstream_url": "https://provider.invalid/sub",
-            "upstream_user_agent": "clash.meta", "timeout": 15,
+            "upstream_user_agent": DEFAULT_USER_AGENT, "timeout": 15,
             "cache_ttl": 300, "max_stale": 600, "retry_interval": 60,
             "devices": [
                 {"type": kind, "token": letter * 40}
@@ -197,6 +197,20 @@ class ServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_settings(path)
 
+    def test_default_and_legacy_settings_use_clash_verge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "settings.yaml"
+            settings = {**self.settings, "common": str(COMMON)}
+            for value in (None, "", "clash.meta"):
+                settings["upstream_user_agent"] = value
+                path.write_text(yaml.safe_dump(settings))
+                self.assertEqual(load_settings(path)["upstream_user_agent"], DEFAULT_USER_AGENT)
+            del settings["upstream_user_agent"]
+            path.write_text(yaml.safe_dump(settings))
+            self.assertEqual(load_settings(path)["upstream_user_agent"], DEFAULT_USER_AGENT)
+        provider = load_mixin(SUBSCRIPTION)["proxy-providers"]["Airport"]
+        self.assertEqual(provider["header"]["User-Agent"], [DEFAULT_USER_AGENT])
+
     @patch("app.urlopen")
     def test_fetch_sets_explicit_user_agent_and_filters_headers(self, open_mock):
         response = open_mock.return_value.__enter__.return_value
@@ -204,9 +218,9 @@ class ServiceTests(unittest.TestCase):
         response.url = "https://provider.invalid/sub"
         response.read.return_value = UPSTREAM
         response.headers = {"subscription-userinfo": "upload=1", "Set-Cookie": "private"}
-        body, headers = fetch_upstream(response.url, "provider-approved-ua", 15)
+        body, headers = fetch_upstream(response.url, DEFAULT_USER_AGENT, 15)
         request = open_mock.call_args.args[0]
-        self.assertEqual(request.get_header("User-agent"), "provider-approved-ua")
+        self.assertEqual(request.get_header("User-agent"), DEFAULT_USER_AGENT)
         self.assertEqual(body, UPSTREAM)
         self.assertEqual(headers, {"subscription-userinfo": "upload=1"})
 

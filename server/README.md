@@ -26,8 +26,10 @@ Common 中的 `rule-providers` 下载。节点改为随完整订阅更新，客�
 User-Agent，也不接受客户端传入任意上游 URL。测试全部使用模拟数据。
 
 `upstream_url` 留空时读取 Subscription-Mixin 的 Airport URL；也可以指定提供商批准的
-专用地址。`upstream_user_agent` 默认 `clash.meta`，仅用于请求 YAML 格式，
-不能代替提供商授权。上游必须返回带 `proxies`、`proxy-groups`、`rules` 的完整
+专用地址。`upstream_user_agent` 默认 `clash-verge/v2.5.8`，仅用于请求 YAML 格式，
+不能代替提供商授权。旧配置的 `clash.meta`、空值或未配置会自动使用该默认值；
+其他显式自定义 UA 仍保留。直接导入订阅 Mixin 时，其 provider 请求头也使用
+相同 UA。上游必须返回带 `proxies`、`proxy-groups`、`rules` 的完整
 配置；HTML、空节点、仅节点订阅和 Base64 节点列表会被拒绝。
 
 ## 部署
