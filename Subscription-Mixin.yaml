@@ -1,0 +1,24 @@
+# Subscription-specific overlay for MySubscription-Common.yaml.
+# Deep-merge this mapping into Common before applying Nikki-Mixin.yaml.
+# Preserve existing DNS policies; do not replace the nameserver-policy map.
+# Only provider nodes are consumed from the remote subscription.
+
+proxy-providers:
+  Airport:
+    type: http
+    interval: 86400
+    url: "https://api.usfoo.com/api/v1/message?token=156b674d754416c212d668ebd3bc14d7"
+    proxy: DIRECT
+    path: ./proxy_providers/airport.yaml
+    health-check:
+      enable: true
+      url: "https://www.youtube.com/generate_204"
+      interval: 300
+      timeout: 5000
+
+dns:
+  nameserver-policy:
+    # Bootstrap the DIRECT Airport subscription without relying on proxy DNS.
+    api.usfoo.com:
+      - 'https://dns.alidns.com/dns-query#DIRECT'
+      - 'https://doh.pub/dns-query#DIRECT'

@@ -1,5 +1,5 @@
 # Common Mihomo profile: terminal defaults; Nikki supplies router overrides.
-# Preserves the original private nodes and Airport subscription credentials.
+# Keeps private nodes and shared policy; subscription settings live in Subscription-Mixin.yaml.
 # Requires a Mihomo-based client with MRS and VLESS REALITY support.
 # Terminal: enable the client service/VPN/TUN permission and let it manage DNS.
 # Router: use Nikki TPROXY, disable TUN and DNS hijacking, and use redir-host.
@@ -92,10 +92,6 @@ dns:
     - 'time.*.apple.com'
 
   nameserver-policy:
-    # Bootstrap the DIRECT Airport subscription without relying on proxy DNS.
-    api.usfoo.com:
-      - 'https://dns.alidns.com/dns-query#DIRECT'
-      - 'https://doh.pub/dns-query#DIRECT'
     '+.cuhk.edu.cn':
       - 10.20.220.50
     'rule-set:cn':
@@ -141,19 +137,6 @@ proxies:
 
     client-fingerprint: chrome
 
-proxy-providers:
-  Airport:
-    type: http
-    interval: 86400
-    url: "https://api.usfoo.com/api/v1/message?token=156b674d754416c212d668ebd3bc14d7"
-    proxy: DIRECT
-    path: ./proxy_providers/airport.yaml
-    health-check:
-      enable: true
-      url: "https://www.youtube.com/generate_204"
-      interval: 300
-      timeout: 5000
-
 # Shared candidate lists. Mihomo expands these before loading the
 # profile, so each group below stays on a single line.
 x-proxy-lists:
@@ -168,8 +151,8 @@ proxy-groups:
   # Candidate order controls routing defaults and is preserved.
   # Default exit convention: CN-region traffic ends on DIRECT, every other
   # service starts at PROXY, Japan pins Vultr-JP, Anthropic pins Vultr-SG.
-  # Only PROXY, AUTO and FALLBACK consume the Airport provider; the remaining
-  # groups reference them, so airport nodes are listed and checked once.
+  # Only PROXY, AUTO and FALLBACK include externally configured providers.
+  # Other groups reference these shared selectors without binding provider names.
   # Service providers
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: Apple-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
@@ -197,10 +180,10 @@ proxy-groups:
   - {name: YouTube, type: select, proxies: *proxied}
 
   # Shared selectors, utilities and catch-all policies
-  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], use: [Airport]}
-  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
+  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], include-all-providers: true}
+  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
   # FALLBACK 顺序代表优先级：
-  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], use: [Airport], url: "https://www.youtube.com/generate_204", interval: 300, lazy: true}
+  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, lazy: true}
   - {name: Development, type: select, proxies: *proxied_or_direct}
   # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
   - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}

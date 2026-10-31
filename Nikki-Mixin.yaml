@@ -10,7 +10,8 @@
 # A fresh API secret is supplied below; update the dashboard connection to it.
 # Router explicit HTTP/SOCKS/mixed ports are disabled; terminal port stays 7897.
 # Do not replace the main subscription profile with this overlay.
-# Nodes, providers, proxy groups and routing rules stay in the main profile.
+# Private nodes, proxy groups and routing rules stay in Common.
+# Merge Subscription-Mixin.yaml into Common first to include subscription nodes.
 # API TLS fields were Unmodified in the screenshot and are intentionally omitted.
 #
 # Nikki deep-merges this file over the profile, so only the values that differ
