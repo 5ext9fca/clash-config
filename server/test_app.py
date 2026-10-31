@@ -8,9 +8,10 @@ from unittest.mock import patch
 
 import yaml
 
-from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile
+from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common
 
 COMMON = Path(__file__).resolve().parent.parent / "MySubscription-Common.yaml"
+PRIVATE = COMMON.with_name("Private-Nodes-Mixin.yaml")
 SUBSCRIPTION = COMMON.with_name("Subscription-Mixin.yaml")
 ROUTER = COMMON.with_name("Nikki-Mixin.yaml")
 UPSTREAM = b"# Original provider profile\nproxies:\n- {name: Airport-test, type: ss, server: example.com, port: 443, cipher: aes-128-gcm, password: test}\nproxy-groups:\n- {name: Default, type: select, proxies: [Airport-test]}\nrules: ['MATCH,Default']\n"
@@ -22,6 +23,7 @@ class ServiceTests(unittest.TestCase):
         self.calls = 0
         self.denied = False
         self.settings = {
+            "private_nodes_mixin": str(PRIVATE),
             "subscription_mixin": str(SUBSCRIPTION), "router_mixin": str(ROUTER),
             "common": COMMON, "upstream_url": "https://provider.invalid/sub",
             "upstream_user_agent": "clash.meta", "timeout": 15,
@@ -55,7 +57,7 @@ class ServiceTests(unittest.TestCase):
         status, _, body = self.request()
         self.assertEqual(status, "200 OK")
         actual = yaml.safe_load(body)
-        common = merge_profile(yaml.safe_load(COMMON.read_bytes()), load_mixin(SUBSCRIPTION))
+        common = merge_profile(load_common(self.settings), load_mixin(SUBSCRIPTION))
         for key in ("rules", "proxy-groups", "proxies", "dns", "tun", "rule-providers"):
             self.assertEqual(actual[key], common[key])
         provider = actual["proxy-providers"]["Airport"]
@@ -63,6 +65,17 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(provider["payload"], parse_profile(UPSTREAM)["proxies"])
         self.assertNotIn("url", provider)
         self.assertEqual(provider["health-check"], common["proxy-providers"]["Airport"]["health-check"])
+
+    def test_private_nodes_are_separate_and_references_resolve(self):
+        self.assertNotIn("proxies", load_mixin(COMMON))
+        for device in ("d", "r"):
+            profile = yaml.safe_load(self.request(device)[2])
+            self.assertEqual(profile["proxies"], load_mixin(PRIVATE)["proxies"])
+            names = {node["name"] for node in profile["proxies"]}
+            names.update(group["name"] for group in profile["proxy-groups"])
+            names.update(("DIRECT", "REJECT"))
+            for group in profile["proxy-groups"]:
+                self.assertTrue(set(group.get("proxies", [])) <= names)
 
     def test_mobile_is_byte_for_byte_upstream(self):
         status, headers, body = self.request("m")
@@ -155,7 +168,7 @@ class ServiceTests(unittest.TestCase):
             parse_profile(yaml.safe_dump(profile))
 
     def test_template_is_not_mutated(self):
-        common = parse_profile(COMMON.read_bytes())
+        common = load_common(self.settings)
         original = copy.deepcopy(common)
         render_common(common, parse_profile(UPSTREAM), load_mixin(SUBSCRIPTION), load_mixin(ROUTER))
         self.assertEqual(common, original)

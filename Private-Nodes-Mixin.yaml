@@ -1,0 +1,43 @@
+# Private node definitions for MySubscription-Common.yaml.
+# Merge before Subscription-Mixin.yaml and the optional Nikki-Mixin.yaml.
+# Common retains node names in strategy groups to preserve exit preferences.
+
+proxies:
+  - name: "Vultr-JP"
+    type: vless
+
+    server: 198.13.57.54
+    port: 443
+    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
+
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: "www.mi.com"
+
+    reality-opts:
+      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
+      short-id: "27bb3e8c080bf4de"
+
+    client-fingerprint: chrome
+
+  - name: "Vultr-SG"
+    type: vless
+
+    server: 139.180.209.160
+    port: 443
+    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
+
+    network: tcp
+    tls: true
+    udp: true
+    flow: xtls-rprx-vision
+    servername: "www.mi.com"
+
+    reality-opts:
+      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
+      short-id: "27bb3e8c080bf4de"
+
+    client-fingerprint: chrome
+

@@ -59,6 +59,11 @@ def merge_profile(base, overlay):
     return result
 
 
+def load_common(settings):
+    common = merge_profile(load_mixin(settings["common"]), load_mixin(settings["private_nodes_mixin"]))
+    return parse_profile(yaml.safe_dump(common))
+
+
 def render_common(common, upstream, subscription, router=None):
     """Compose local policy and mixins, consuming only upstream nodes."""
     result = merge_profile(common, subscription)
@@ -131,11 +136,12 @@ def load_settings(path):
     settings = yaml.safe_load(path.read_bytes())
     common_path = (path.parent / settings.get("common", "../MySubscription-Common.yaml")).resolve()
     settings["common"] = common_path
-    parse_profile(common_path.read_bytes())
-    for key, filename in (("subscription_mixin", "Subscription-Mixin.yaml"),
+    for key, filename in (("private_nodes_mixin", "Private-Nodes-Mixin.yaml"),
+                          ("subscription_mixin", "Subscription-Mixin.yaml"),
                           ("router_mixin", "Nikki-Mixin.yaml")):
         settings[key] = (path.parent / settings.get(key, f"../{filename}")).resolve()
         load_mixin(settings[key])
+    load_common(settings)
     subscription = load_mixin(settings["subscription_mixin"])
     url = settings.get("upstream_url") or subscription["proxy-providers"]["Airport"]["url"]
     parsed_url = urlsplit(url)
@@ -186,7 +192,7 @@ class Application:
                     if device_type == "mobile":
                         body = raw
                     else:
-                        common = parse_profile(self.settings["common"].read_bytes())
+                        common = load_common(self.settings)
                         subscription = load_mixin(self.settings["subscription_mixin"])
                         router = load_mixin(self.settings["router_mixin"]) if device_type == "router" else None
                         body = render_common(common, profile, subscription, router)

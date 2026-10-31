@@ -3,14 +3,15 @@
 为每台设备分配独立订阅令牌，通过 HTTPS 拉取完整 YAML：
 
 - `desktop`：读取 `../MySubscription-Common.yaml` 并深度合并
-  `../Subscription-Mixin.yaml`，将上游 `proxies` 嵌入
+  `../Private-Nodes-Mixin.yaml`、`../Subscription-Mixin.yaml`，将上游 `proxies` 嵌入
   `Airport` inline provider。保留私有节点、健康检查、策略组、DNS 和规则顺序。
 - `mobile`：返回订阅服务原始 YAML 字节，不应用 Common、不添加私有节点。
 - `router`：在桌面端配置基础上自动深度合并 `../Nikki-Mixin.yaml`，
   下发已关闭 TUN、启用 TPROXY 和 redir-host 的完整配置。
 
 Mixin 合并时递归保留映射中的其他键，列表和标量整体替换；空列表会清空
-原列表。订阅 Mixin 保持独立，Common 不包含机场专属设置。
+原列表。自建节点和订阅 Mixin 保持独立，Common 只保留策略及节点名称引用，
+不含节点连接参数；单独的 Common 不能直接使用。
 
 设备类型由服务端配置绑定，不推测客户端 User-Agent。移动端需要支持提供商
 返回的 Clash YAML 格式；服务不转换为其他客户端格式。规则集仍由客户端按
@@ -48,15 +49,15 @@ docker compose build app
 docker compose run --rm --no-deps app python -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-确认 `.env` 中的网络名，并为 `settings.yaml` 中每台设备填写独立令牌；占位令牌会被拒绝。Common、subscription_mixin 和 router_mixin 路径保留默认相对路径，Compose 会将
-settings 和三个 YAML 文件挂载到匹配的容器路径。不要填宿主机绝对路径。
+确认 `.env` 中的网络名，并为 `settings.yaml` 中每台设备填写独立令牌；占位令牌会被拒绝。Common、private_nodes_mixin、subscription_mixin 和 router_mixin 路径保留默认相对路径，Compose 会将
+settings 和四个 YAML 文件挂载到匹配的容器路径。不要填宿主机绝对路径。
 
 应用固定以 UID/GID `10001:10001` 运行；在 Linux 服务器上设置读取权限：
 
 ```sh
 sudo chown 10001:10001 settings.yaml
 sudo chmod 600 settings.yaml
-# Common 和两个 Mixin 默认应可读；若权限收紧，也需允许容器 UID 10001 读取。
+# Common 和三个 Mixin 默认应可读；若权限收紧，也需允许容器 UID 10001 读取。
 docker compose config --quiet
 docker compose run --rm --no-deps app python -c 'from app import create_app; create_app(); print("Configuration OK")'
 ```
@@ -110,7 +111,7 @@ MyCollab 的停止和重建不影响订阅入口。
 
 - 更新 Common、任一 Mixin 或 settings 后执行 `docker compose up -d --force-recreate app`。
   单文件 bind mount 可能仍指向原子替换前的 inode，必须重建容器而不只是 restart。
-  Common 和订阅 Mixin 每次生成时读取挂载文件；router 还会读取 Nikki Mixin。
+  Common、自建节点和订阅 Mixin 每次生成时读取挂载文件；router 还会读取 Nikki Mixin。
 - 更新服务代码或依赖后执行 `docker compose up -d --build`；更新 `.env` 后执行
   `docker compose up -d` 使网络设置生效。公共入口的更新在 MyCaddy 中单独执行。
 - 上游按请求触发刷新，共享内存缓存默认 300 秒；默认仅一个 Gunicorn worker，
@@ -133,6 +134,7 @@ docker run --rm --network none --read-only --tmpfs /tmp \
   --mount "type=bind,src=$(cd .. && pwd)/MySubscription-Common.yaml,dst=/app/MySubscription-Common.yaml,readonly" \
   --mount "type=bind,src=$(cd .. && pwd)/Subscription-Mixin.yaml,dst=/app/Subscription-Mixin.yaml,readonly" \
   --mount "type=bind,src=$(cd .. && pwd)/Nikki-Mixin.yaml,dst=/app/Nikki-Mixin.yaml,readonly" \
+  --mount "type=bind,src=$(cd .. && pwd)/Private-Nodes-Mixin.yaml,dst=/app/Private-Nodes-Mixin.yaml,readonly" \
   clash-config-test:local
 ```
 

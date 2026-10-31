@@ -1,5 +1,6 @@
 # Common Mihomo profile: terminal defaults; Nikki supplies router overrides.
-# Keeps private nodes and shared policy; subscription settings live in Subscription-Mixin.yaml.
+# Shared policy; merge Private-Nodes-Mixin.yaml for referenced private nodes.
+# Subscription settings live in Subscription-Mixin.yaml.
 # Requires a Mihomo-based client with MRS and VLESS REALITY support.
 # Terminal: enable the client service/VPN/TUN permission and let it manage DNS.
 # Router: use Nikki TPROXY, disable TUN and DNS hijacking, and use redir-host.
@@ -184,45 +185,6 @@ dns:
     'rule-set:cn':
       - 'https://dns.alidns.com/dns-query#DIRECT'
       - 'https://doh.pub/dns-query#DIRECT'
-
-proxies:
-  - name: "Vultr-JP"
-    type: vless
-
-    server: 198.13.57.54
-    port: 443
-    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
-
-    network: tcp
-    tls: true
-    udp: true
-    flow: xtls-rprx-vision
-    servername: "www.mi.com"
-
-    reality-opts:
-      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
-      short-id: "27bb3e8c080bf4de"
-
-    client-fingerprint: chrome
-
-  - name: "Vultr-SG"
-    type: vless
-
-    server: 139.180.209.160
-    port: 443
-    uuid: "4fc199d7-8e70-45b4-b18f-f3e45407e5c6"
-
-    network: tcp
-    tls: true
-    udp: true
-    flow: xtls-rprx-vision
-    servername: "www.mi.com"
-
-    reality-opts:
-      public-key: "J58F2aqvMjGi3SDmZIjwYY8wpAsxqbddtmUL5F0-xg0"
-      short-id: "27bb3e8c080bf4de"
-
-    client-fingerprint: chrome
 
 # Shared candidate lists. Mihomo expands these before loading the
 # profile, so each group below stays on a single line.

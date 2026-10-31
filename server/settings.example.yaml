@@ -1,5 +1,6 @@
 # Paths are relative to this file. Restart the service after changing settings.
 common: ../MySubscription-Common.yaml
+private_nodes_mixin: ../Private-Nodes-Mixin.yaml
 subscription_mixin: ../Subscription-Mixin.yaml
 router_mixin: ../Nikki-Mixin.yaml
 # Leave empty to use Subscription-Mixin's Airport URL. The provider must authorize this
