@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import yaml
 
-from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common, DEFAULT_USER_AGENT, MAX_UA_CACHES
+from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common, DEFAULT_USER_AGENT, MAX_HEADER_CACHES
 
 COMMON = Path(__file__).resolve().parent.parent / "MySubscription-Common.yaml"
 PRIVATE = COMMON.with_name("Private-Nodes-Mixin.yaml")
@@ -35,13 +35,13 @@ class ServiceTests(unittest.TestCase):
         }
         self.app = Application(self.settings, self.fetch, lambda: self.now)
 
-    def fetch(self, url, user_agent, timeout):
+    def fetch(self, url, user_agent, timeout, flag="anytls"):
         self.calls += 1
         if self.denied:
             raise PermissionError("403: private subscription URL")
         return UPSTREAM, {"subscription-userinfo": "upload=1; download=2; total=100"}
 
-    def request(self, letter="d", method="GET", path=None, user_agent=None):
+    def request(self, letter="d", method="GET", path=None, user_agent=None, flag=None):
         response = {}
 
         def start(status, headers):
@@ -49,6 +49,7 @@ class ServiceTests(unittest.TestCase):
 
         body = b"".join(self.app({
             "HTTP_USER_AGENT": user_agent,
+            "HTTP_FLAG": flag,
             "REQUEST_METHOD": method,
             "PATH_INFO": path or f"/sub/{letter * 40}/config.yaml",
         }, start))
@@ -140,9 +141,28 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(self.request(kind, user_agent=ua)[0], "200 OK")
             self.assertEqual(open_mock.call_args.args[0].get_header("User-agent"), ua or DEFAULT_USER_AGENT)
 
+    @patch("app.urlopen")
+    def test_flag_defaults_and_passthrough_have_separate_caches(self, open_mock):
+        response = open_mock.return_value.__enter__.return_value
+        response.status = 200
+        response.url = "https://provider.invalid/sub"
+        response.headers = {}
+        self.app.cache.fetch = fetch_upstream
+        response.read.return_value = UPSTREAM
+        self.assertEqual(self.request("m")[2], UPSTREAM)
+        self.assertEqual(open_mock.call_args.args[0].get_header("Flag"), "anytls")
+        alternate = UPSTREAM.replace(b"Airport-test", b"Alternate")
+        response.read.return_value = alternate
+        self.assertEqual(self.request("m", flag="custom-value")[2], alternate)
+        self.assertEqual(open_mock.call_args.args[0].get_header("Flag"), "custom-value")
+        self.assertEqual(self.request("m", flag="")[2], UPSTREAM)
+        self.assertEqual(self.request("m", flag="anytls")[2], UPSTREAM)
+        self.assertEqual(open_mock.call_count, 2)
+        self.assertEqual(load_mixin(SUBSCRIPTION)["proxy-providers"]["Airport"]["header"]["flag"], ["anytls"])
+
     def test_user_agent_caches_and_failures_are_isolated(self):
         calls = []
-        def fetch(url, ua, timeout):
+        def fetch(url, ua, timeout, flag="anytls"):
             calls.append(ua)
             if self.denied:
                 raise PermissionError()
@@ -161,13 +181,13 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(calls, ["ClientA", "ClientB", "ClientA", "ClientC", "ClientB"])
 
     def test_user_agent_cache_evicts_least_recently_used(self):
-        for index in range(MAX_UA_CACHES):
+        for index in range(MAX_HEADER_CACHES):
             self.request("m", user_agent=f"Client{index}")
         self.request("m", user_agent="Client0")
         self.request("m", user_agent="ExtraClient")
-        self.assertEqual(len(self.app.cache.entries), MAX_UA_CACHES)
-        self.assertIn("Client0", self.app.cache.entries)
-        self.assertNotIn("Client1", self.app.cache.entries)
+        self.assertEqual(len(self.app.cache.entries), MAX_HEADER_CACHES)
+        self.assertIn(("Client0", "anytls"), self.app.cache.entries)
+        self.assertNotIn(("Client1", "anytls"), self.app.cache.entries)
 
     def test_shared_cache_refreshes_on_expiry(self):
         self.request("m")
@@ -197,7 +217,7 @@ class ServiceTests(unittest.TestCase):
     def test_bad_upstream_does_not_replace_successful_cache(self):
         self.request("m")
         self.now = 300
-        self.app.cache.fetch = lambda *args: (b"<html>Access denied</html>", {})
+        self.app.cache.fetch = lambda *args, **kwargs: (b"<html>Access denied</html>", {})
         self.assertEqual(self.request("m")[2], UPSTREAM)
 
     def test_invalid_yaml_and_duplicate_nodes_are_rejected(self):

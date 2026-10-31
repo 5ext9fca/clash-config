@@ -9,6 +9,8 @@ proxy-providers:
     interval: 86400
     url: "https://api.usfoo.com/api/v1/message?token=156b674d754416c212d668ebd3bc14d7"
     header:
+      flag:
+        - anytls
       User-Agent:
         - FlClash/v0.9.2 clash-verge Platform/linux
     proxy: DIRECT

@@ -16,7 +16,8 @@ from urllib.request import Request, urlopen
 import yaml
 
 DEFAULT_USER_AGENT = "FlClash/v0.9.2 clash-verge Platform/linux"
-MAX_UA_CACHES = 32
+DEFAULT_FLAG = "anytls"
+MAX_HEADER_CACHES = 32
 MAX_BODY = 5 * 1024 * 1024
 LOG = logging.getLogger(__name__)
 
@@ -85,8 +86,8 @@ def render_common(common, upstream, subscription, router=None):
     return yaml.safe_dump(result, allow_unicode=True, sort_keys=False).encode("utf-8")
 
 
-def fetch_upstream(url, user_agent, timeout):
-    request = Request(url, headers={"User-Agent": user_agent, "Accept": "application/yaml"})
+def fetch_upstream(url, user_agent, timeout, flag=DEFAULT_FLAG):
+    request = Request(url, headers={"User-Agent": user_agent, "Accept": "application/yaml", "flag": flag})
     with urlopen(request, timeout=timeout) as response:
         if response.status != 200 or urlsplit(response.url).scheme != "https":
             raise ValueError("Unexpected upstream response")
@@ -116,14 +117,15 @@ class SubscriptionCache:
         self.lock = threading.Lock()
         self.entries = OrderedDict()
 
-    def get(self, user_agent):
+    def get(self, user_agent, flag=DEFAULT_FLAG):
+        key = (user_agent, flag)
         with self.lock:
-            if user_agent not in self.entries:
-                if len(self.entries) >= MAX_UA_CACHES:
+            if key not in self.entries:
+                if len(self.entries) >= MAX_HEADER_CACHES:
                     self.entries.popitem(last=False)
-                self.entries[user_agent] = CacheEntry()
-            self.entries.move_to_end(user_agent)
-            entry = self.entries[user_agent]
+                self.entries[key] = CacheEntry()
+            self.entries.move_to_end(key)
+            entry = self.entries[key]
             now = self.clock()
             if now >= entry.next_attempt:
                 try:
@@ -131,6 +133,7 @@ class SubscriptionCache:
                         self.settings["upstream_url"],
                         user_agent,
                         self.settings["timeout"],
+                        flag=flag,
                     )
                     parsed = parse_profile(body)
                     entry.value = (body, headers, parsed)
@@ -205,7 +208,9 @@ class Application:
             else:
                 try:
                     user_agent = environ.get("HTTP_USER_AGENT") or self.settings["upstream_user_agent"]
-                    (raw, upstream_headers, profile), stale = self.cache.get(user_agent)
+                    (raw, upstream_headers, profile), stale = self.cache.get(
+                        user_agent, environ.get("HTTP_FLAG") or DEFAULT_FLAG
+                    )
                     if device_type == "mobile":
                         body = raw
                     else:

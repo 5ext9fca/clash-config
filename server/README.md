@@ -23,7 +23,7 @@ Common 中的 `rule-providers` 下载。节点改为随完整订阅更新，客�
 **现有订阅链接默认拒绝访问，正式启用前必须手动向提供商申请允许服务器访问。**
 向提供商确认出口 IP、允许的请求方式及返回 Clash YAML 所需的 User-Agent。
 服务只向配置好的 HTTPS 地址发起普通请求，不绕过访问限制，透传设备请求中非空的
-User-Agent，不接受客户端传入任意上游 URL。测试全部使用模拟数据。
+User-Agent 和 flag，不接受客户端传入任意上游 URL。测试全部使用模拟数据。
 
 `upstream_url` 留空时读取 Subscription-Mixin 的 Airport URL；也可以指定提供商批准的
 专用地址。请求包含非空 User-Agent 时原样透传；缺失或为空时使用
@@ -33,6 +33,9 @@ User-Agent，不接受客户端传入任意上游 URL。测试全部使用模拟
 相同 UA。格式依据 [FlClash 官方源码](https://github.com/chen08209/FlClash/blob/main/lib/common/package.dart)，
 其中 `clash-verge` 是官方兼容标识，平台按 Linux 服务环境填写。上游必须返回带 `proxies`、`proxy-groups`、`rules` 的完整
 配置；HTML、空节点、仅节点订阅和 Base64 节点列表会被拒绝。
+
+请求头 `flag` 默认发送 `anytls`；客户端传入非空 `flag` 时原样透传。
+直接使用 Subscription-Mixin 的 provider 同样发送 `flag: anytls`。
 
 ## 部署
 
@@ -118,8 +121,8 @@ MyCollab 的停止和重建不影响订阅入口。
   Common、自建节点和订阅 Mixin 每次生成时读取挂载文件；router 还会读取 Nikki Mixin。
 - 更新服务代码或依赖后执行 `docker compose up -d --build`；更新 `.env` 后执行
   `docker compose up -d` 使网络设置生效。公共入口的更新在 MyCaddy 中单独执行。
-- 上游按请求触发刷新，按实际发送的 User-Agent 隔离内存缓存，默认 300 秒；
-  相同 UA 的设备共享缓存，不同 UA 的响应、流量信息和失败重试互不混用。
+- 上游按请求触发刷新，按实际发送的 `(User-Agent, flag)` 组合隔离内存缓存，默认 300 秒；
+  相同 UA 和 flag 的设备共享缓存，不同组合的响应、流量信息和失败重试互不混用。
   最多保留 32 份，超限淘汰最久未使用的缓存。默认仅一个 Gunicorn worker，
   四个线程共享缓存和锁，避免并发重复拉取。没有定时后台下载任务。
 - 403、超时、无效 YAML 等失败后至少等待 60 秒再尝试。首次失败返回 503；
