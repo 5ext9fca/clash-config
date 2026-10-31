@@ -1,5 +1,7 @@
 """Device-specific Mihomo subscriptions, served behind an HTTPS reverse proxy."""
 
+from collections import OrderedDict
+from dataclasses import dataclass
 import copy
 import hmac
 import logging
@@ -14,6 +16,7 @@ from urllib.request import Request, urlopen
 import yaml
 
 DEFAULT_USER_AGENT = "FlClash/v0.9.2 clash-verge Platform/linux"
+MAX_UA_CACHES = 32
 MAX_BODY = 5 * 1024 * 1024
 LOG = logging.getLogger(__name__)
 
@@ -98,38 +101,49 @@ def fetch_upstream(url, user_agent, timeout):
         return body, headers
 
 
+@dataclass
+class CacheEntry:
+    value: object = None
+    updated: float = 0
+    next_attempt: float = 0
+
+
 class SubscriptionCache:
     def __init__(self, settings, fetch=fetch_upstream, clock=time.monotonic):
         self.settings = settings
         self.fetch = fetch
         self.clock = clock
         self.lock = threading.Lock()
-        self.value = None
-        self.updated = 0
-        self.next_attempt = 0
+        self.entries = OrderedDict()
 
-    def get(self):
+    def get(self, user_agent):
         with self.lock:
+            if user_agent not in self.entries:
+                if len(self.entries) >= MAX_UA_CACHES:
+                    self.entries.popitem(last=False)
+                self.entries[user_agent] = CacheEntry()
+            self.entries.move_to_end(user_agent)
+            entry = self.entries[user_agent]
             now = self.clock()
-            if now >= self.next_attempt:
+            if now >= entry.next_attempt:
                 try:
                     body, headers = self.fetch(
                         self.settings["upstream_url"],
-                        self.settings["upstream_user_agent"],
+                        user_agent,
                         self.settings["timeout"],
                     )
                     parsed = parse_profile(body)
-                    self.value = (body, headers, parsed)
-                    self.updated = self.clock()
-                    self.next_attempt = self.updated + self.settings["cache_ttl"]
+                    entry.value = (body, headers, parsed)
+                    entry.updated = self.clock()
+                    entry.next_attempt = entry.updated + self.settings["cache_ttl"]
                 except Exception:
                     # Exception messages may contain the private subscription URL.
                     LOG.warning("Upstream subscription unavailable; retry delayed")
-                    self.next_attempt = self.clock() + self.settings["retry_interval"]
-            age = self.clock() - self.updated
-            if self.value is None or age > self.settings["cache_ttl"] + self.settings["max_stale"]:
+                    entry.next_attempt = self.clock() + self.settings["retry_interval"]
+            age = self.clock() - entry.updated
+            if entry.value is None or age > self.settings["cache_ttl"] + self.settings["max_stale"]:
                 raise RuntimeError("Subscription unavailable")
-            return self.value, age >= self.settings["cache_ttl"]
+            return entry.value, age >= self.settings["cache_ttl"]
 
 
 def load_settings(path):
@@ -190,7 +204,8 @@ class Application:
                 headers.append(("Allow", "GET, HEAD"))
             else:
                 try:
-                    (raw, upstream_headers, profile), stale = self.cache.get()
+                    user_agent = environ.get("HTTP_USER_AGENT") or self.settings["upstream_user_agent"]
+                    (raw, upstream_headers, profile), stale = self.cache.get(user_agent)
                     if device_type == "mobile":
                         body = raw
                     else:

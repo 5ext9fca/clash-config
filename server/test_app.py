@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 import yaml
 
-from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common, DEFAULT_USER_AGENT
+from app import Application, fetch_upstream, load_settings, parse_profile, render_common, load_mixin, merge_profile, load_common, DEFAULT_USER_AGENT, MAX_UA_CACHES
 
 COMMON = Path(__file__).resolve().parent.parent / "MySubscription-Common.yaml"
 PRIVATE = COMMON.with_name("Private-Nodes-Mixin.yaml")
@@ -41,13 +41,14 @@ class ServiceTests(unittest.TestCase):
             raise PermissionError("403: private subscription URL")
         return UPSTREAM, {"subscription-userinfo": "upload=1; download=2; total=100"}
 
-    def request(self, letter="d", method="GET", path=None):
+    def request(self, letter="d", method="GET", path=None, user_agent=None):
         response = {}
 
         def start(status, headers):
             response.update(status=status, headers=dict(headers))
 
         body = b"".join(self.app({
+            "HTTP_USER_AGENT": user_agent,
             "REQUEST_METHOD": method,
             "PATH_INFO": path or f"/sub/{letter * 40}/config.yaml",
         }, start))
@@ -126,6 +127,47 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(status, "200 OK")
         self.assertEqual(body, b"")
         self.assertEqual(int(headers["Content-Length"]), len(UPSTREAM))
+
+    @patch("app.urlopen")
+    def test_request_user_agent_is_forwarded_and_empty_uses_default(self, open_mock):
+        response = open_mock.return_value.__enter__.return_value
+        response.status = 200
+        response.url = "https://provider.invalid/sub"
+        response.read.return_value = UPSTREAM
+        response.headers = {}
+        self.app.cache.fetch = fetch_upstream
+        for kind, ua in (("m", "Client/mobile"), ("d", "Client/desktop"), ("r", "Client/router"), ("m", "")):
+            self.assertEqual(self.request(kind, user_agent=ua)[0], "200 OK")
+            self.assertEqual(open_mock.call_args.args[0].get_header("User-agent"), ua or DEFAULT_USER_AGENT)
+
+    def test_user_agent_caches_and_failures_are_isolated(self):
+        calls = []
+        def fetch(url, ua, timeout):
+            calls.append(ua)
+            if self.denied:
+                raise PermissionError()
+            return UPSTREAM.replace(b"Airport-test", ua.encode()), {"subscription-userinfo": ua}
+        self.app.cache.fetch = fetch
+        a = self.request("m", user_agent="ClientA")
+        b = self.request("m", user_agent="ClientB")
+        self.assertNotEqual(a[2], b[2])
+        self.assertEqual(self.request("m", user_agent="ClientA"), a)
+        self.assertEqual(calls, ["ClientA", "ClientB"])
+        self.now, self.denied = 300, True
+        self.assertEqual(self.request("m", user_agent="ClientA")[2], a[2])
+        self.assertEqual(self.request("m", user_agent="ClientC")[0], "503 Service Unavailable")
+        self.assertEqual(self.request("m", user_agent="ClientB")[2], b[2])
+        self.request("m", user_agent="ClientC")
+        self.assertEqual(calls, ["ClientA", "ClientB", "ClientA", "ClientC", "ClientB"])
+
+    def test_user_agent_cache_evicts_least_recently_used(self):
+        for index in range(MAX_UA_CACHES):
+            self.request("m", user_agent=f"Client{index}")
+        self.request("m", user_agent="Client0")
+        self.request("m", user_agent="ExtraClient")
+        self.assertEqual(len(self.app.cache.entries), MAX_UA_CACHES)
+        self.assertIn("Client0", self.app.cache.entries)
+        self.assertNotIn("Client1", self.app.cache.entries)
 
     def test_shared_cache_refreshes_on_expiry(self):
         self.request("m")
