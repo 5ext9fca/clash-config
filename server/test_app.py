@@ -197,11 +197,12 @@ class ServiceTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 load_settings(path)
 
-    def test_default_and_legacy_settings_use_clash_verge(self):
+    def test_default_and_legacy_settings_use_flclash(self):
+        self.assertEqual(DEFAULT_USER_AGENT, "FlClash/v0.9.2 clash-verge Platform/linux")
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "settings.yaml"
             settings = {**self.settings, "common": str(COMMON)}
-            for value in (None, "", "clash.meta"):
+            for value in (None, "", "clash.meta", "clash-verge/v2.5.8"):
                 settings["upstream_user_agent"] = value
                 path.write_text(yaml.safe_dump(settings))
                 self.assertEqual(load_settings(path)["upstream_user_agent"], DEFAULT_USER_AGENT)

@@ -13,7 +13,7 @@ from urllib.request import Request, urlopen
 
 import yaml
 
-DEFAULT_USER_AGENT = "clash-verge/v2.5.8"
+DEFAULT_USER_AGENT = "FlClash/v0.9.2 clash-verge Platform/linux"
 MAX_BODY = 5 * 1024 * 1024
 LOG = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ def load_settings(path):
     if parsed_url.scheme != "https" or not parsed_url.hostname or parsed_url.username:
         raise ValueError("upstream_url must be an HTTPS URL without userinfo")
     settings["upstream_url"] = url
-    if settings.get("upstream_user_agent") in (None, "", "clash.meta"):
+    if settings.get("upstream_user_agent") in (None, "", "clash.meta", "clash-verge/v2.5.8"):
         settings["upstream_user_agent"] = DEFAULT_USER_AGENT
     for key, default in (("cache_ttl", 300), ("max_stale", 86400), ("retry_interval", 60), ("timeout", 15)):
         settings.setdefault(key, default)
