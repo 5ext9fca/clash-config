@@ -12,6 +12,7 @@ proxy-providers:
     path: ./proxy_providers/airport.yaml
     health-check:
       enable: true
+      lazy: false
       url: "https://www.youtube.com/generate_204"
       interval: 300
       timeout: 5000

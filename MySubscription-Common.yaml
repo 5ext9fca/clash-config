@@ -66,10 +66,10 @@ dns:
     - 119.29.29.29
     - 114.114.114.114
 
-  # Default resolvers supplied by the Airport Clash subscription.
+  # Default resolution uses public DoH through the selected PROXY group.
   nameserver:
-    - 'https://zone.rlose.com:39933/api-query'
-    - 'https://radar.rlose.com/api-query'
+    - 'https://1.1.1.1/dns-query#PROXY'
+    - 'https://8.8.8.8/dns-query#PROXY'
 
   # Node hostnames must resolve without depending on the proxy itself.
   proxy-server-nameserver:
@@ -230,9 +230,9 @@ proxy-groups:
 
   # Shared selectors, utilities and catch-all policies
   - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], include-all-providers: true}
-  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: true}
+  - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: false}
   # FALLBACK 顺序代表优先级：
-  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, lazy: true}
+  - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, lazy: false}
   - {name: Development, type: select, proxies: *proxied_or_direct}
   # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
   - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
