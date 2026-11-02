@@ -23,6 +23,25 @@ proxy-providers:
       timeout: 5000
 
 dns:
+  # Use the provider's ingress-aware DNS for default and node resolution.
+  # Lists race concurrently: never mix public resolvers into the primary list.
+  nameserver:
+    - 'https://zone.rlose.com:39933/api-query#DIRECT'
+    - 'https://radar.rlose.com/api-query#DIRECT'
+  # A dedicated proxy resolver bypasses fallback; inherit the main resolver.
+  proxy-server-nameserver: []
+  fallback:
+    - 'https://dns.alidns.com/dns-query#DIRECT'
+    - 'https://doh.pub/dns-query#DIRECT'
+  # Prefetch backup answers so an official timeout cannot exhaust their budget.
+  # Successful official answers still take precedence over faster backups.
+  fallback-lazy-query: false
+  # Accept official answers regardless of location; fall back on failure/no IP.
+  fallback-filter:
+    geoip: false
+    geosite: []
+    ipcidr: []
+    domain: []
   nameserver-policy:
     # Bootstrap the DIRECT Airport subscription without relying on proxy DNS.
     api.usfoo.com:
