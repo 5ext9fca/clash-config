@@ -204,6 +204,7 @@ proxy-groups:
   # Other groups reference these shared selectors without binding provider names.
   # Service providers
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
+  - {name: Apple-Music, type: select, proxies: [Apple-Non-CN, PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
   - {name: Apple-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
   - {name: Bahamut, type: select, proxies: *proxied_quick}
   - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
@@ -420,10 +421,10 @@ rules:
   # Apple
   # ------------------------------------------------------------
 
-  # CN 子集走 CN 组（DIRECT），其余苹果域名走 Apple-Non-CN 组。
+  # CN 子集走 CN 组（DIRECT），非 CN 音乐走独立策略组，其余苹果域名走 Apple-Non-CN。
   - RULE-SET,apple_cn,CN
   - RULE-SET,apple_music_cn,CN
-  - RULE-SET,apple_music,Apple-Non-CN
+  - RULE-SET,apple_music,Apple-Music
   - RULE-SET,apple_tv,Apple-Non-CN
   - RULE-SET,apple_podcasts,Apple-Non-CN
   - RULE-SET,apple_dev,Apple-Non-CN
