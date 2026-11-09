@@ -69,7 +69,7 @@ User-Agent 和 flag，不接受客户端传入任意上游 URL。测试全部使
 在服务器 checkout 中运行：
 
 ```sh
-cd clash/server
+cd server
 cp settings.example.yaml settings.yaml
 cp .env.example .env
 # 构建应用镜像；构建过程不会读取或访问订阅。
