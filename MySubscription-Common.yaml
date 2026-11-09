@@ -193,15 +193,15 @@ x-proxy-lists:
   proxied_quick: &proxied_quick [PROXY, AUTO, Vultr-JP, Vultr-SG]
   proxied_or_direct: &proxied_or_direct [PROXY, AUTO, FALLBACK, DIRECT]
   direct_first: &direct_first [DIRECT, PROXY]
-  anthropic_nodes: &anthropic_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK]  # Anthropic only
+  anthropic_nodes: &anthropic_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]  # Anthropic only
 
 proxy-groups:
   # Service providers are sorted by name; shared policies follow at the end.
   # Candidate order controls routing defaults and is preserved.
   # Default exit convention: CN-region traffic ends on DIRECT, every other
   # service starts at PROXY, Japan pins Vultr-JP, Anthropic pins Vultr-SG.
-  # Only PROXY, AUTO and FALLBACK include externally configured providers.
-  # Other groups reference these shared selectors without binding provider names.
+  # PROXY, AUTO, FALLBACK and Region-* include configured providers.
+  # Region-* filters all nodes by name, without binding provider names.
   # Service providers
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: Apple-Music, type: select, proxies: [Apple-Non-CN, PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
@@ -209,18 +209,18 @@ proxy-groups:
   - {name: Bahamut, type: select, proxies: *proxied_quick}
   - {name: Bilibili-Non-CN, type: select, proxies: *proxied_quick}
   # The ByteDance rule set contains only non-CN AI services.
-  - {name: ByteDance-Non-CN, type: select, proxies: [AI, PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: ByteDance-Non-CN, type: select, proxies: [AI, PROXY, Vultr-SG, Vultr-JP, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]}
   - {name: Cloudflare, type: select, proxies: *direct_first}
   - {name: CloudFront, type: select, proxies: *direct_first}
   - {name: Discord, type: select, proxies: *proxied}
   - {name: Fastly, type: select, proxies: *direct_first}
   - {name: GitHub, type: select, proxies: [Development, PROXY, Vultr-JP, Vultr-SG, DIRECT]}
   - {name: Google, type: select, proxies: *proxied}
-  - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: HuggingFace, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]}
   - {name: Microsoft-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK, Vultr-JP, Vultr-SG]}
   # OneDrive keeps its own selector: bulk sync traffic is pinned separately.
   - {name: OneDrive, type: select, proxies: [PROXY, Microsoft-Non-CN, DIRECT, AUTO]}
-  - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: OpenAI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]}
   # Spotify inherits Media until an independent exit is selected.
   - {name: Spotify, type: select, proxies: [Media, PROXY, AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT]}
   - {name: Steam-Non-CN, type: select, proxies: [PROXY, DIRECT, Games-Non-CN, AUTO]}
@@ -229,14 +229,27 @@ proxy-groups:
   - {name: Twitter, type: select, proxies: *proxied_quick}
   - {name: YouTube, type: select, proxies: *proxied}
 
+  # Country/region selectors: name-based matching, not IP geolocation.
+  # Empty regions reject traffic instead of silently connecting directly.
+  - {name: Region-HK, type: select, include-all: true, filter: '(?i)香港|Hong[ -]?Kong|🇭🇰|(^|[^A-Za-z])(HK)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-TW, type: select, include-all: true, filter: '(?i)台湾|台灣|Taiwan|🇹🇼|(^|[^A-Za-z])(TW)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-JP, type: select, include-all: true, filter: '(?i)日本|Japan|Tokyo|Osaka|🇯🇵|(^|[^A-Za-z])(JP)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-SG, type: select, include-all: true, filter: '(?i)新加坡|狮城|獅城|Singapore|🇸🇬|(^|[^A-Za-z])(SG)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-US, type: select, include-all: true, filter: '(?i)美国|美國|United[ -]?States|USA|🇺🇸|(^|[^A-Za-z])(US)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-KR, type: select, include-all: true, filter: '(?i)韩国|韓國|Korea|🇰🇷|(^|[^A-Za-z])(KR)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-GB, type: select, include-all: true, filter: '(?i)英国|英國|United[ -]?Kingdom|Britain|🇬🇧|(^|[^A-Za-z])(GB|UK)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-DE, type: select, include-all: true, filter: '(?i)德国|德國|Germany|🇩🇪|(^|[^A-Za-z])(DE)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-CA, type: select, include-all: true, filter: '(?i)加拿大|Canada|🇨🇦|(^|[^A-Za-z])(CA)([^A-Za-z]|$)', empty-fallback: REJECT}
+  - {name: Region-AU, type: select, include-all: true, filter: '(?i)澳大利亚|澳大利亞|澳洲|Australia|🇦🇺|(^|[^A-Za-z])(AU)([^A-Za-z]|$)', empty-fallback: REJECT}
+
   # Shared selectors, utilities and catch-all policies
-  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT], include-all-providers: true}
+  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU], include-all-providers: true}
   - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: false}
   # FALLBACK 顺序代表优先级：
   - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, lazy: false}
   - {name: Development, type: select, proxies: *proxied_or_direct}
   # 按提供商选择出口；AI 仅兜底跨提供商分类，Anthropic 保持 SG 优先。
-  - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK]}
+  - {name: AI, type: select, proxies: [PROXY, Vultr-SG, Vultr-JP, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]}
   - {name: Games-Non-CN, type: select, proxies: [PROXY, DIRECT, AUTO, FALLBACK]}
   # 日区服务（Pixiv、EHentai）共用一个选择器，默认走 Vultr-JP。
   - {name: Japan, type: select, proxies: [Vultr-JP, Vultr-SG, PROXY, AUTO]}
