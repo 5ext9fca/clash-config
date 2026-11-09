@@ -196,12 +196,15 @@ x-proxy-lists:
   anthropic_nodes: &anthropic_nodes [Vultr-SG, Vultr-JP, PROXY, FALLBACK, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU]  # Anthropic only
 
 proxy-groups:
-  # Service providers are sorted by name; shared policies follow at the end.
+  # PROXY stays first; service providers are sorted by name below it.
+  # Country/region selectors and remaining shared policies follow.
   # Candidate order controls routing defaults and is preserved.
   # Default exit convention: CN-region traffic ends on DIRECT, every other
   # service starts at PROXY, Japan pins Vultr-JP, Anthropic pins Vultr-SG.
   # PROXY, AUTO, FALLBACK and Region-* include configured providers.
   # Region-* filters all nodes by name, without binding provider names.
+  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU], include-all-providers: true}
+
   # Service providers
   - {name: Anthropic, type: select, proxies: *anthropic_nodes}
   - {name: Apple-Music, type: select, proxies: [Apple-Non-CN, PROXY, DIRECT, AUTO, Vultr-JP, Vultr-SG]}
@@ -243,7 +246,6 @@ proxy-groups:
   - {name: Region-AU, type: select, include-all: true, filter: '(?i)澳大利亚|澳大利亞|澳洲|Australia|🇦🇺|(^|[^A-Za-z])(AU)([^A-Za-z]|$)', empty-fallback: REJECT}
 
   # Shared selectors, utilities and catch-all policies
-  - {name: PROXY, type: select, proxies: [AUTO, FALLBACK, Vultr-JP, Vultr-SG, DIRECT, Region-HK, Region-TW, Region-JP, Region-SG, Region-US, Region-KR, Region-GB, Region-DE, Region-CA, Region-AU], include-all-providers: true}
   - {name: AUTO, type: url-test, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, tolerance: 50, lazy: false}
   # FALLBACK 顺序代表优先级：
   - {name: FALLBACK, type: fallback, proxies: [Vultr-JP, Vultr-SG], include-all-providers: true, url: "https://www.youtube.com/generate_204", interval: 300, lazy: false}

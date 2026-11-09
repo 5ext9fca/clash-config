@@ -10,6 +10,8 @@ Root YAML files own Mihomo policy and overlays. `server/` owns distribution code
 
 ## Clash Routing Policy
 
+Keep `PROXY` as the first entry in `MySubscription-Common.yaml`'s `proxy-groups` list. Sorting or adding strategy groups must preserve this position without changing group candidate order or the matching order in `rules`.
+
 In `MySubscription-Common.yaml`, the high priority of `RULE-SET,dev,Development` is intentional. Keep it ahead of the Google, Microsoft, Apple, and other service rules that currently follow it, so overlapping development domains use Development. Preserve the preceding GitHub Copilot and GitHub exceptions. Do not move Development into the category fallback section or treat this precedence as a routing defect unless the user explicitly requests a policy change. Alphabetical sorting of strategy groups or rule-provider definitions must not change the matching order in `rules`.
 
 ## Validation
