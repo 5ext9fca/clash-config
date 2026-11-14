@@ -10,7 +10,6 @@ upstream_url: ""
 upstream_user_agent: FlClash/v0.9.2 clash-verge Platform/linux
 upstream_flag: anytls
 cache_ttl: 300
-max_stale: 86400
 retry_interval: 60
 timeout: 15
 devices:

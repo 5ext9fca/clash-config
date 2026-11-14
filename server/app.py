@@ -144,7 +144,7 @@ class SubscriptionCache:
                     LOG.warning("Upstream subscription unavailable; retry delayed")
                     entry.next_attempt = self.clock() + self.settings["retry_interval"]
             age = self.clock() - entry.updated
-            if entry.value is None or age > self.settings["cache_ttl"] + self.settings["max_stale"]:
+            if entry.value is None:
                 raise RuntimeError("Subscription unavailable")
             return entry.value, age >= self.settings["cache_ttl"]
 
@@ -173,7 +173,7 @@ def load_settings(path):
         value = settings[key]
         if not isinstance(value, str) or not value or not value.isascii() or any(ord(c) < 32 or ord(c) == 127 for c in value):
             raise ValueError(f"{key} must be a non-empty ASCII header value")
-    for key, default in (("cache_ttl", 300), ("max_stale", 86400), ("retry_interval", 60), ("timeout", 15)):
+    for key, default in (("cache_ttl", 300), ("retry_interval", 60), ("timeout", 15)):
         settings.setdefault(key, default)
         if type(settings[key]) is not int or settings[key] <= 0:
             raise ValueError(f"{key} must be a positive integer")

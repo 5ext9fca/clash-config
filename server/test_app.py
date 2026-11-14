@@ -251,7 +251,7 @@ class ServiceTests(unittest.TestCase):
         self.request("m")
         self.assertEqual(self.calls, 2)
 
-    def test_denial_serves_bounded_stale_cache_and_throttles_retries(self):
+    def test_denial_serves_stale_cache_without_age_limit_and_throttles_retries(self):
         self.request("m")
         self.now, self.denied = 300, True
         status, headers, body = self.request("m")
@@ -259,8 +259,31 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(headers["X-Subscription-Cache"], "stale")
         self.request("m")
         self.assertEqual(self.calls, 2)
-        self.now = 901
-        self.assertEqual(self.request("m")[0], "503 Service Unavailable")
+        for now in (901, 30 * 86400):
+            self.now = now
+            status, headers, body = self.request("m")
+            self.assertEqual((status, body), ("200 OK", UPSTREAM))
+            self.assertEqual(headers["X-Subscription-Cache"], "stale")
+            self.assertEqual(headers["subscription-userinfo"], "upload=1; download=2; total=100")
+        self.assertEqual(self.calls, 4)
+
+    def test_stale_source_preserves_device_outputs_and_recovers_after_retry(self):
+        originals = {device: self.request(device)[2] for device in ("m", "d", "r")}
+        self.now, self.denied = 30 * 86400, True
+        for device, original in originals.items():
+            status, headers, body = self.request(device)
+            self.assertEqual((status, body), ("200 OK", original))
+            self.assertEqual(headers["X-Subscription-Cache"], "stale")
+        self.assertEqual(self.calls, 2)
+        updated = UPSTREAM.replace(b"Airport-test", b"Recovered")
+        self.app.cache.fetch = lambda *args, **kwargs: (updated, {"subscription-userinfo": "upload=3"})
+        self.now += 59
+        self.assertEqual(self.request("m")[2], UPSTREAM)
+        self.now += 1
+        status, headers, body = self.request("m")
+        self.assertEqual((status, body), ("200 OK", updated))
+        self.assertEqual(headers["X-Subscription-Cache"], "fresh")
+        self.assertEqual(headers["subscription-userinfo"], "upload=3")
 
     def test_initial_denial_returns_503_without_private_details(self):
         self.denied = True
@@ -270,9 +293,17 @@ class ServiceTests(unittest.TestCase):
 
     def test_bad_upstream_does_not_replace_successful_cache(self):
         self.request("m")
-        self.now = 300
-        self.app.cache.fetch = lambda *args, **kwargs: (b"<html>Access denied</html>", {})
-        self.assertEqual(self.request("m")[2], UPSTREAM)
+        for invalid in (b"<html>Access denied</html>", b"proxies: []", b"invalid: ["):
+            self.now += 30 * 86400
+            self.app.cache.fetch = lambda *args, **kwargs: (invalid, {})
+            self.assertEqual(self.request("m")[2], UPSTREAM)
+
+    def test_timeout_serves_old_cache_but_new_header_combination_returns_503(self):
+        self.request("m")
+        self.now = 30 * 86400
+        with patch.object(self.app.cache, "fetch", side_effect=TimeoutError()):
+            self.assertEqual(self.request("m")[2], UPSTREAM)
+            self.assertEqual(self.request("m", flag="uncached")[0], "503 Service Unavailable")
 
     def test_invalid_yaml_and_duplicate_nodes_are_rejected(self):
         for body in (b"proxies: []", b"message: Forbidden", b"!!python/object:foo {}"):
