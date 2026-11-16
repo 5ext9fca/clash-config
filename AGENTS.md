@@ -16,7 +16,7 @@ In `MySubscription-Common.yaml`, the high priority of `RULE-SET,dev,Development`
 
 ## Validation
 
-Run the offline regression tests documented in `server/README.md`; never use real subscriptions for tests. Preserve device-specific output, authentication, cache behavior, and relative Compose mount paths. Validate generated profiles with the target Mihomo version before deployment.
+Run the offline regression tests documented in `server/README.md`; never use real subscriptions for tests. Preserve device-specific output, authentication, cache behavior, and relative Compose mount paths.
 
 ## Commits
 
