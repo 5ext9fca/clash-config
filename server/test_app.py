@@ -1,6 +1,7 @@
 """Offline regression checks; never contact the real subscription provider."""
 
 import copy
+import threading
 from pathlib import Path
 import tempfile
 import unittest
@@ -139,7 +140,8 @@ class ServiceTests(unittest.TestCase):
         self.app.cache.fetch = fetch_upstream
         for kind, ua in (("m", "Client/mobile"), ("d", "Client/desktop"), ("r", "Client/router"), ("m", "")):
             self.assertEqual(self.request(kind, user_agent=ua)[0], "200 OK")
-            self.assertEqual(open_mock.call_args.args[0].get_header("User-agent"), (ua if kind != "r" else None) or DEFAULT_USER_AGENT)
+            expected = (ua if kind != "r" else None) or DEFAULT_USER_AGENT
+            self.assertIn(expected, [call.args[0].get_header("User-agent") for call in open_mock.call_args_list])
 
     def test_header_forwarding_switches_are_independent(self):
         self.settings["upstream_user_agent"] = "ConfiguredUA"
@@ -153,13 +155,13 @@ class ServiceTests(unittest.TestCase):
         for forward_ua, forward_flag in ((False, False), (True, False), (False, True), (True, True)):
             router.update(forward_user_agent=forward_ua, forward_flag=forward_flag)
             self.assertEqual(self.request("r", user_agent="ClientUA", flag="client-flag")[0], "200 OK")
-            self.assertEqual(seen[-1], (
+            self.assertIn((
                 "ClientUA" if forward_ua else "ConfiguredUA",
                 "client-flag" if forward_flag else "configured-flag",
-            ))
-        self.assertEqual(len(seen), 4)
+            ), seen)
+        self.assertEqual(len(seen), 10)
         self.assertEqual(self.request("r", user_agent="", flag="")[0], "200 OK")
-        self.assertEqual(len(seen), 4)  # Empty headers reuse the configured-default cache.
+        self.assertEqual(len(seen), 14)  # All four variants refresh again.
 
     def test_router_ignores_headers_by_default(self):
         self.settings["upstream_user_agent"] = "ConfiguredUA"
@@ -171,7 +173,7 @@ class ServiceTests(unittest.TestCase):
         self.app.cache.fetch = fetch
         for ua, flag in (("RouterA", "one"), ("RouterB", "two")):
             self.assertEqual(self.request("r", user_agent=ua, flag=flag)[0], "200 OK")
-        self.assertEqual(seen, [("ConfiguredUA", "configured-flag")])
+        self.assertEqual(seen, [("ConfiguredUA", "configured-flag")] * 2)
 
     def test_settings_header_defaults_and_switch_validation(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -206,12 +208,22 @@ class ServiceTests(unittest.TestCase):
         self.assertEqual(self.request("m")[2], UPSTREAM)
         self.assertEqual(open_mock.call_args.args[0].get_header("Flag"), "anytls")
         alternate = UPSTREAM.replace(b"Airport-test", b"Alternate")
-        response.read.return_value = alternate
+        # Use independent responses because variants refresh concurrently.
+        from unittest.mock import MagicMock
+        def respond(request, **kwargs):
+            result = MagicMock()
+            upstream = result.__enter__.return_value
+            upstream.status = 200
+            upstream.url = "https://provider.invalid/sub"
+            upstream.headers = {}
+            upstream.read.return_value = alternate if request.get_header("Flag") == "custom-value" else UPSTREAM
+            return result
+        open_mock.side_effect = respond
         self.assertEqual(self.request("m", flag="custom-value")[2], alternate)
-        self.assertEqual(open_mock.call_args.args[0].get_header("Flag"), "custom-value")
+        self.assertIn("custom-value", [call.args[0].get_header("Flag") for call in open_mock.call_args_list])
         self.assertEqual(self.request("m", flag="")[2], UPSTREAM)
         self.assertEqual(self.request("m", flag="anytls")[2], UPSTREAM)
-        self.assertEqual(open_mock.call_count, 2)
+        self.assertEqual(open_mock.call_count, 7)
         self.assertEqual(load_mixin(SUBSCRIPTION)["proxy-providers"]["Airport"]["header"]["flag"], ["anytls"])
 
     def test_user_agent_caches_and_failures_are_isolated(self):
@@ -226,13 +238,13 @@ class ServiceTests(unittest.TestCase):
         b = self.request("m", user_agent="ClientB")
         self.assertNotEqual(a[2], b[2])
         self.assertEqual(self.request("m", user_agent="ClientA"), a)
-        self.assertEqual(calls, ["ClientA", "ClientB"])
+        self.assertCountEqual(calls, ["ClientA"] * 3 + ["ClientB"] * 2)
         self.now, self.denied = 300, True
         self.assertEqual(self.request("m", user_agent="ClientA")[2], a[2])
         self.assertEqual(self.request("m", user_agent="ClientC")[0], "503 Service Unavailable")
         self.assertEqual(self.request("m", user_agent="ClientB")[2], b[2])
         self.request("m", user_agent="ClientC")
-        self.assertEqual(calls, ["ClientA", "ClientB", "ClientA", "ClientC", "ClientB"])
+        self.assertCountEqual(calls, ["ClientA"] * 4 + ["ClientB"] * 3 + ["ClientC"])
 
     def test_user_agent_cache_evicts_least_recently_used(self):
         for index in range(MAX_HEADER_CACHES):
@@ -243,13 +255,85 @@ class ServiceTests(unittest.TestCase):
         self.assertIn(("Client0", "anytls"), self.app.cache.entries)
         self.assertNotIn(("Client1", "anytls"), self.app.cache.entries)
 
-    def test_shared_cache_refreshes_on_expiry(self):
+    def test_request_refreshes_other_variants_with_their_own_headers_and_metadata(self):
+        version = 1
+        seen = []
+        def fetch(url, ua, timeout, flag):
+            seen.append((ua, flag))
+            label = f"{ua}-{flag}-v{version}"
+            return UPSTREAM.replace(b"Airport-test", label.encode()), {"subscription-userinfo": label}
+        self.app.cache.fetch = fetch
+        self.request("m", user_agent="A", flag="one")
+        self.request("m", user_agent="A", flag="two")
+        self.request("m", user_agent="B", flag="one")
+        seen.clear()
+        version = 2
+        self.now = 1  # All entries are still within the old TTL.
+        self.assertEqual(self.request("m", user_agent="A", flag="one")[0], "200 OK")
+        self.assertCountEqual(seen, [("A", "one"), ("A", "two"), ("B", "one")])
+        for (ua, flag), entry in self.app.cache.entries.items():
+            label = f"{ua}-{flag}-v2"
+            raw, headers, parsed = entry.value
+            self.assertIn(label.encode(), raw)
+            self.assertEqual(headers["subscription-userinfo"], label)
+            self.assertEqual(parsed["proxies"][0]["name"], label)
+            self.assertEqual(entry.updated, 1)
+
+    def test_failed_variant_is_preserved_and_recovered_by_another_variant_request(self):
+        failed = False
+        calls = []
+        def fetch(url, ua, timeout, flag):
+            calls.append(ua)
+            if ua == "A" and failed:
+                return b"invalid: [", {}
+            return UPSTREAM.replace(b"Airport-test", f"{ua}-{self.now}".encode()), {}
+        self.app.cache.fetch = fetch
+        original = self.request("m", user_agent="A")[2]
+        failed = True
+        self.now = 1
+        self.assertEqual(self.request("m", user_agent="B")[0], "200 OK")
+        status, headers, body = self.request("m", user_agent="A")
+        self.assertEqual((status, body), ("200 OK", original))
+        self.assertEqual(headers["X-Subscription-Cache"], "stale")
+        self.assertEqual(calls.count("A"), 2)
+        failed = False
+        self.now = 60
+        self.request("m", user_agent="B")
+        self.assertEqual(calls.count("A"), 2)
+        self.now = 61
+        self.request("m", user_agent="B")
+        entry = self.app.cache.entries[("A", "anytls")]
+        self.assertIn(b"A-61", entry.value[0])
+        self.assertFalse(entry.refresh_failed)
+
+    def test_request_without_own_cache_still_refreshes_other_variants(self):
+        self.request("m", user_agent="A")
+        updated = UPSTREAM.replace(b"Airport-test", b"Updated")
+        def fetch(url, ua, timeout, flag):
+            if ua == "B":
+                raise TimeoutError()
+            return updated, {}
+        self.app.cache.fetch = fetch
+        self.assertEqual(self.request("m", user_agent="B")[0], "503 Service Unavailable")
+        self.assertEqual(self.app.cache.entries[("A", "anytls")].value[0], updated)
+
+    def test_refresh_downloads_run_concurrently(self):
+        self.request("m", user_agent="A")
+        barrier = threading.Barrier(2)
+        def fetch(url, ua, timeout, flag):
+            barrier.wait(timeout=5)
+            return UPSTREAM, {}
+        self.app.cache.fetch = fetch
+        self.assertEqual(self.request("m", user_agent="B")[0], "200 OK")
+        self.assertTrue(all(not entry.refresh_failed for entry in self.app.cache.entries.values()))
+
+    def test_shared_cache_refreshes_on_every_request(self):
         self.request("m")
         self.request("d")
-        self.assertEqual(self.calls, 1)
+        self.assertEqual(self.calls, 2)
         self.now = 300
         self.request("m")
-        self.assertEqual(self.calls, 2)
+        self.assertEqual(self.calls, 3)
 
     def test_denial_serves_stale_cache_without_age_limit_and_throttles_retries(self):
         self.request("m")
@@ -274,7 +358,7 @@ class ServiceTests(unittest.TestCase):
             status, headers, body = self.request(device)
             self.assertEqual((status, body), ("200 OK", original))
             self.assertEqual(headers["X-Subscription-Cache"], "stale")
-        self.assertEqual(self.calls, 2)
+        self.assertEqual(self.calls, 4)
         updated = UPSTREAM.replace(b"Airport-test", b"Recovered")
         self.app.cache.fetch = lambda *args, **kwargs: (updated, {"subscription-userinfo": "upload=3"})
         self.now += 59

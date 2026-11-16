@@ -9,6 +9,7 @@ upstream_url: ""
 # Defaults used when forwarding is disabled or the client header is empty.
 upstream_user_agent: FlClash/v0.9.2 clash-verge Platform/linux
 upstream_flag: anytls
+# Age threshold for stale responses; every request refreshes all known variants.
 cache_ttl: 300
 retry_interval: 60
 timeout: 15

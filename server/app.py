@@ -1,6 +1,7 @@
 """Device-specific Mihomo subscriptions, served behind an HTTPS reverse proxy."""
 
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 import copy
 import hmac
@@ -18,6 +19,7 @@ import yaml
 DEFAULT_USER_AGENT = "FlClash/v0.9.2 clash-verge Platform/linux"
 DEFAULT_FLAG = "anytls"
 MAX_HEADER_CACHES = 32
+MAX_REFRESH_WORKERS = 4
 MAX_BODY = 5 * 1024 * 1024
 LOG = logging.getLogger(__name__)
 
@@ -107,6 +109,7 @@ class CacheEntry:
     value: object = None
     updated: float = 0
     next_attempt: float = 0
+    refresh_failed: bool = False
 
 
 class SubscriptionCache:
@@ -126,27 +129,37 @@ class SubscriptionCache:
                 self.entries[key] = CacheEntry()
             self.entries.move_to_end(key)
             entry = self.entries[key]
+            # Every request refreshes all known variants, even while fresh.
+            # Only failed variants in their retry window are skipped. Keep the
+            # batch under the lock so eviction and overlapping requests cannot
+            # race with updates; refreshes do not affect LRU access order.
             now = self.clock()
-            if now >= entry.next_attempt:
-                try:
-                    body, headers = self.fetch(
-                        self.settings["upstream_url"],
-                        user_agent,
-                        self.settings["timeout"],
-                        flag=flag,
-                    )
-                    parsed = parse_profile(body)
-                    entry.value = (body, headers, parsed)
-                    entry.updated = self.clock()
-                    entry.next_attempt = entry.updated + self.settings["cache_ttl"]
-                except Exception:
-                    # Exception messages may contain the private subscription URL.
-                    LOG.warning("Upstream subscription unavailable; retry delayed")
-                    entry.next_attempt = self.clock() + self.settings["retry_interval"]
+            pending = [(k, v) for k, v in self.entries.items() if now >= v.next_attempt]
+            if pending:
+                with ThreadPoolExecutor(max_workers=MAX_REFRESH_WORKERS) as executor:
+                    list(executor.map(self._refresh, pending))
             age = self.clock() - entry.updated
             if entry.value is None:
                 raise RuntimeError("Subscription unavailable")
-            return entry.value, age >= self.settings["cache_ttl"]
+            return entry.value, entry.refresh_failed or age >= self.settings["cache_ttl"]
+
+    def _refresh(self, item):
+        (user_agent, flag), entry = item
+        try:
+            body, headers = self.fetch(
+                self.settings["upstream_url"], user_agent,
+                self.settings["timeout"], flag=flag,
+            )
+            parsed = parse_profile(body)
+            entry.value = (body, headers, parsed)
+            entry.updated = self.clock()
+            entry.next_attempt = 0
+            entry.refresh_failed = False
+        except Exception:
+            # Exception messages may contain the private subscription URL.
+            LOG.warning("Upstream subscription unavailable; retry delayed")
+            entry.next_attempt = self.clock() + self.settings["retry_interval"]
+            entry.refresh_failed = True
 
 
 def load_settings(path):
