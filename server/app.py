@@ -217,10 +217,10 @@ class Application:
         method = environ.get("REQUEST_METHOD", "GET")
         headers = [("Cache-Control", "private, no-store"), ("X-Content-Type-Options", "nosniff")]
         status, body = "404 Not Found", b"Not found\n"
-        match = re.fullmatch(r"/sub/([A-Za-z0-9_-]{32,128})/config\.yaml", environ.get("PATH_INFO", ""))
+        match = re.fullmatch(r"token=([A-Za-z0-9_-]{32,128})", environ.get("QUERY_STRING", ""))
         matched_device = None
         device_type = None
-        if match:
+        if environ.get("PATH_INFO") == "/sub" and match:
             for device in self.settings["devices"]:
                 if hmac.compare_digest(match[1], device["token"]):
                     device_type = device["type"]

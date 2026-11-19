@@ -42,7 +42,7 @@ class ServiceTests(unittest.TestCase):
             raise PermissionError("403: private subscription URL")
         return UPSTREAM, {"subscription-userinfo": "upload=1; download=2; total=100"}
 
-    def request(self, letter="d", method="GET", path=None, user_agent=None, flag=None):
+    def request(self, letter="d", method="GET", path=None, user_agent=None, flag=None, query=None):
         response = {}
 
         def start(status, headers):
@@ -52,7 +52,8 @@ class ServiceTests(unittest.TestCase):
             "HTTP_USER_AGENT": user_agent,
             "HTTP_FLAG": flag,
             "REQUEST_METHOD": method,
-            "PATH_INFO": path or f"/sub/{letter * 40}/config.yaml",
+            "PATH_INFO": path or "/sub",
+            "QUERY_STRING": f"token={letter * 40}" if query is None else query,
         }, start))
         return response["status"], response["headers"], body
 
@@ -121,6 +122,8 @@ class ServiceTests(unittest.TestCase):
     def test_invalid_token_path_and_method_do_not_fetch(self):
         for path in ("/", "/sub/bad/config.yaml", f"/sub/{'z' * 40}/config.yaml", "/../settings.yaml"):
             self.assertEqual(self.request(path=path)[0], "404 Not Found")
+        for query in ("", "token=", "token=short", "token=" + "z" * 40, "token=" + "d" * 40 + "&token=" + "m" * 40):
+            self.assertEqual(self.request(query=query)[0], "404 Not Found")
         self.assertEqual(self.request(method="POST")[0], "405 Method Not Allowed")
         self.assertEqual(self.calls, 0)
 

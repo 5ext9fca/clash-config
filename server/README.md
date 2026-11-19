@@ -107,20 +107,20 @@ docker compose logs --tail=50 app
 
 ### 接入公共 Caddy（公网 IPv4）
 
-公网地址、证书、80/443 与 `/sub/*` 路由统一由独立项目 `MyCaddy` 管理。
+公网地址、证书、80/443 与 `/sub` 路由统一由独立项目 `MyCaddy` 管理。
 在 MyCaddy 的 `.env` 设置 `PUBLIC_HOST`，并启用 `conf/routes/clash.caddy`。
-此路由保留 `/sub/` 前缀；不再修改 MyCollab 的 Caddyfile，也不共享其默认网络。
+此路由精确匹配 `/sub` 并原样转发查询字符串；不再修改 MyCollab 的 Caddyfile，也不共享其默认网络。
 迁移旧证书卷、切换入口和重新加载的命令见 MyCaddy README。
 本服务 `.env` 只控制网络，不配置公网地址。
 
-验收时先访问 `https://<公网IPv4>/sub/invalid/config.yaml`：应返回应用的纯文本
+验收时先访问 `https://<公网IPv4>/sub?token=invalid`：应返回应用的纯文本
 404，而不是 MyCollab 的 HTML。它不访问订阅提供商。再确认 `/`、API 和静态文件
 仍正常；获提供商授权后再用真实令牌验证订阅。证书检查不要跳过校验。
 
 客户端导入地址：
 
 ```text
-https://<公网IPv4>/sub/<该设备的令牌>/config.yaml
+https://<公网IPv4>/sub?token=<该设备的令牌>
 ```
 
 路由器使用 `router` 令牌即可订阅合并后的完整配置，无需在 Nikki 再导入 Mixin。
@@ -129,7 +129,7 @@ Nikki 中关闭重复的 Mixin File Content，并将对应 GUI 覆写项设为 U
 DNS 劫持。
 
 Gunicorn 与公共 Caddy 默认配置均不启用访问日志，避免记录令牌；如已有全局代理日志，
-也应隐藏订阅路径。响应带 `Cache-Control: private, no-store`，不应由 CDN 公共
+也应隐藏订阅查询参数。响应带 `Cache-Control: private, no-store`，不应由 CDN 公共
 缓存。设备令牌能读取完整节点凭证；删除或替换令牌后重建应用容器可撤销下载权限，
 但不会撤销设备此前已经下载的节点凭证。
 
