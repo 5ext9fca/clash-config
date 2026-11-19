@@ -365,7 +365,6 @@ rule-providers:
 rules:
   # Custom
   - IP-CIDR,198.13.57.54/32,DIRECT,no-resolve
-  - IP-CIDR,139.180.209.160/32,DIRECT,no-resolve
   - DOMAIN-SUFFIX,cuhk.edu.cn,DIRECT
   - DOMAIN-SUFFIX,eixeix.com,PROXY
 
