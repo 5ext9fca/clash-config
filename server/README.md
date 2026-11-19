@@ -70,15 +70,21 @@ User-Agent 和 flag，不接受客户端传入任意上游 URL。测试全部使
 
 ```sh
 cd server
-cp settings.example.yaml settings.yaml
+uv sync --locked
+uv run python add_device.py phone mobile
 cp .env.example .env
 # 构建应用镜像；构建过程不会读取或访问订阅。
 docker compose build app
-# 每台设备单独运行一次，将输出填入 settings.yaml。
-docker compose run --rm --no-deps app python -c 'import secrets; print(secrets.token_urlsafe(32))'
 ```
 
-确认 `.env` 中的网络名，并为 `settings.yaml` 中每台设备填写独立令牌；占位令牌会被拒绝。Common、private_nodes_mixin、subscription_mixin 和 router_mixin 路径保留默认相对路径，Compose 会将
+在宿主机的 `server/` 目录运行 `uv run python add_device.py <name> <type>`。
+类型可选 `desktop`、`mobile`、`router`。脚本将设备写入 settings.yaml 后输出其订阅令牌。
+首次运行从示例配置创建文件，只登记当前设备。已有配置保留字段值，重新序列化 YAML 时会移除注释。
+设备名重复时退出。可用 `--settings PATH` 指定其他配置文件。
+现有部署需使用有权读取和替换配置、保留文件属主的账户运行，随后执行
+`docker compose up -d --force-recreate app` 使新令牌生效。
+
+确认 `.env` 中的网络名。Common、private_nodes_mixin、subscription_mixin 和 router_mixin 路径保留默认相对路径，Compose 会将
 settings 和四个 YAML 文件挂载到匹配的容器路径。不要填宿主机绝对路径。
 
 应用固定以 UID/GID `10001:10001` 运行；在 Linux 服务器上设置读取权限：
